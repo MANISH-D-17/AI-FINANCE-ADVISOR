@@ -1,0 +1,149 @@
+description,category
+"Starbucks Coffee",Food
+"Amazon Marketplace",Shopping
+"Uber Trip",Travel
+"Netflix Subscription",Entertainment
+"Petrol Station",Travel
+"Grocery Store",Food
+"Cinema Tickets",Entertainment
+"Zomato Food Delivery",Food
+"Swiggy Dineout",Food
+"Flipkart Online",Shopping
+"Myntra Clothing",Shopping
+"Ola Cabs",Travel
+"IRCTC Train Ticket",Travel
+"MakeMyTrip Flights",Travel
+"Apollo Pharmacy",Health
+"Practo Doctor Consult",Health
+"Reliance Fresh",Food
+"BigBasket Groceries",Food
+"Blinkit Grocery",Food
+"Zepto Delivery",Food
+"Jio Prepaid Recharge",Bills
+"Airtel Postpaid",Bills
+"BSES Electricity Bill",Bills
+"Mahanagar Gas Bill",Bills
+"BookMyShow Movie",Entertainment
+"Spotify Premium",Entertainment
+"Amazon Prime Video",Entertainment
+"PVR Cinemas",Entertainment
+"H&M Store",Shopping
+"Zara Fashion",Shopping
+"Shoppers Stop",Shopping
+"Croma Electronics",Shopping
+"Indigo Airlines",Travel
+"RedBus Tickets",Travel
+"1mg Pharmacy",Health
+"Netmeds Online",Health
+"Pathology Lab Test",Health
+"Gym Membership",Health
+"Cult.fit Subscription",Health
+"Broadband Bill Payment",Bills
+"Water Bill Municipal",Bills
+"House Rent Transfer",Other
+"EMI Payment Loan",Other
+"Salary Credited",Other
+"UPI/Zomato/Order",Food
+"UPI/Swiggy/Food",Food
+"UPI/Amazon/Order",Shopping
+"UPI/Flipkart/Sale",Shopping
+"UPI/Ola/Ride",Travel
+"UPI/Uber/Trip",Travel
+"POS MINISO",Shopping
+"POS DMART",Food
+"POS SPENCERS",Food
+"POS DECATHLON",Shopping
+"UPI/Blinkit/Orders",Food
+"UPI/Zepto/Groceries",Food
+"NEFT Rent Transfer",Other
+"UPI/Jio/Recharge",Bills
+"UPI/Airtel/Bill",Bills
+"UPI/TataSky/DTH",Bills
+"IMPS Friend Transfer",Other
+"Cash Withdrawal ATM",Other
+"Mediclaim Policy Premium",Health
+"Term Insurance Premium",Bills
+"Credit Card Bill Payment",Bills
+"Netflix.com",Entertainment
+"Hotstar VIP",Entertainment
+"SonyLIV Yearly",Entertainment
+"Apple One Sub",Entertainment
+"KFC Restaurant",Food
+"McDonalds DriveThru",Food
+"Dominos Pizza",Food
+"Burger King",Food
+"Starbucks Reserve",Food
+"Vistara Airlines",Travel
+"AirIndia Flight",Travel
+"Cleartrip Hotels",Travel
+"Oyo Rooms Booking",Travel
+"Agoda Booking",Travel
+"Max Healthcare",Health
+"Fortis Hospital",Health
+"Kaya Skin Clinic",Health
+"Nike Store",Shopping
+"Adidas Originals",Shopping
+"Puma Retail",Shopping
+"Lifestyle Stores",Shopping
+"IKEA Furniture",Shopping
+"Nykaa Cosmetics",Shopping
+"Paytm Mall",Shopping
+"DTH Recharge Paytm",Bills
+"Gas Cylinder HP",Bills
+"Indane Gas Booking",Bills
+"LIC Premium Renewal",Bills
+"Toll Plaza FASTag",Travel
+"Park+ Parking Fee",Travel
+"Delhi Metro Card Recharge",Travel
+"Namma Metro Spends",Travel
+"Naturals Ice Cream",Food
+"Baskin Robbins",Food
+"Haldirams Restaurant",Food
+"Bikanervala",Food
+"Barbeque Nation",Food
+"Salary Credited for March",Salary
+"Net Salary Payout",Salary
+"HDFC Cashback Points",Cashback
+"Amazon Refund Processed",Refund
+"Flipkart Order Refund",Refund
+"Dividend from Reliance",Investments
+"Interest Credit SB Acct",Investments
+"Zomato Refund Received",Refund
+"IMPS Inward from Friend",Other
+"UPI Receive from Unknown",Other
+"Bonus Performance Award",Salary
+"Travel Reimbursement",Refund
+"Uber Cashback Credit",Cashback
+"Airtel Wallet Refund",Refund
+"LIC Policy Refund",Refund
+"UPI-P S PRANEETH UG",Other
+"UPI-SAARAL BAKERY",Food
+"IMPS-606216688595-AMAZON SELLER SERVICES",Shopping
+"UPI-SWAMY",Other
+"UPI-S B SANJAI",Other
+"UPI-THIRUVASAHAM",Other
+"UPI-ROOPMANN",Shopping
+"UPI-ADITYA",Other
+"UPI-SASGHPL AVINIASHI R",Shopping
+"NEFT*ICIC0000393*CMS3461768763*PHYSICSWALLAH",Other
+"COMM - OTHER MISC. SERVICES",Other
+"CASH Withdrawn at GCC",Other
+"CASH Deposited at GCC",Salary
+"UPI/DR/321360002810/GIP Park/PYTM/paytm-6453",Travel
+"UPI/DR/321360840952/VIKRANT /UTIB/vik.bhat22/UPI",Other
+"ACHCr HDFC00892000009891",Investments
+"IPS REF DT 31 03 2019 032260 HPCL",Travel
+"VISA REF SRI SAI BABA FILLING S",Travel
+"MMT/IMPS/909318812658/SHINE HAIR/AXIS BANK",Health
+"UPI/909319915190/UPI/hussainmushtaq7/State Bank Of I/",Other
+"UPI/909110934510/UPI/gloriousvenkat@/HDFC BANK LTD",Other
+"ACH-DR-GROWW INVEST TECH",Investments
+"ACH-DR-INDIAN CLEARING CORP-0000JESCIVHI9KL7ZC252",Investments
+"UPI/P2M/521333889662/Krishna Lassi Milk /Sent u/AXIS BANK",Food
+"ACH-CR-SPIL FNLDIV 2024",Investments
+"UPI/P2M/5213352581250/CHILDHELP FOUNDATION /na/State Bank Of India",Other
+"UPI/P2M/340067263162/AIRTEL /TN3555/AIRTEL PAYMENTS BANK",Bills
+"UPI/P2A/162838878762/MR DINKAR/Standard /NO REMAR/",Other
+"UPI/P2M/521334594042/MANORAMA DEVI /Sent u/Kotak Mahindra Bank",Other
+"UPI/P2M/557973259393/Vishal /NCX731/EQUITAS SMALL FINANC",Other
+"UPI/P2M/521460480085/Hotel Sanjay /na/YES BANK LIMITED YBS",Food
