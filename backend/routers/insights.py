@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, delete
 from database import get_db
 from dependencies import get_current_user
 from models.user import User
@@ -13,15 +14,14 @@ router = APIRouter(prefix="/insights", tags=["Insights"])
 
 @router.get("/generate", response_model=InsightListResponse)
 async def get_insights(
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     cutoff = datetime.utcnow() - timedelta(hours=24)
-    cached = (
-        db.query(Insight)
-        .filter(Insight.user_id == current_user.id, Insight.generated_at >= cutoff)
-        .all()
-    )
+    stmt = select(Insight).where(Insight.user_id == current_user.id, Insight.generated_at >= cutoff)
+    result = await db.execute(stmt)
+    cached = result.scalars().all()
+    
     is_cached = bool(cached)
     insights = cached if cached else await generate_insights(db, current_user.id)
     return InsightListResponse(
@@ -32,12 +32,12 @@ async def get_insights(
 
 @router.post("/refresh", response_model=InsightListResponse)
 async def refresh_insights(
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     # Force delete cache and regenerate
-    db.query(Insight).filter(Insight.user_id == current_user.id).delete()
-    db.commit()
+    await db.execute(delete(Insight).where(Insight.user_id == current_user.id))
+    await db.commit()
     insights = await generate_insights(db, current_user.id)
     return InsightListResponse(
         insights=[InsightResponse.model_validate(i) for i in insights],

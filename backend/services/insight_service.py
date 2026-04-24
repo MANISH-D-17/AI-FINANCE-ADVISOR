@@ -1,14 +1,21 @@
-from sqlalchemy.orm import Session
-from sqlalchemy import extract
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, extract, delete, desc
 from models.expense import Expense
 from models.budget import Budget
 from models.insight import Insight
 from config import settings
 from datetime import date, datetime, timedelta
 import uuid
+import json
+import logging
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+
+logger = logging.getLogger(__name__)
+_executor = ThreadPoolExecutor(max_workers=5)
 
 
-def _compute_stats(db: Session, user_id: str) -> dict:
+async def _compute_stats(db: AsyncSession, user_id: str) -> dict:
     today = date.today()
     current_month = today.month
     current_year = today.year
@@ -16,20 +23,29 @@ def _compute_stats(db: Session, user_id: str) -> dict:
     prev_month = last_month.month
     prev_year = last_month.year
 
-    def monthly_expenses(month, year):
-        return db.query(Expense).filter(
+    async def monthly_expenses(month, year):
+        # Calculate start and end of month
+        start_date = date(year, month, 1)
+        if month == 12:
+            end_date = date(year + 1, 1, 1)
+        else:
+            end_date = date(year, month + 1, 1)
+            
+        stmt = select(Expense).where(
             Expense.user_id == user_id,
-            extract("month", Expense.date) == month,
-            extract("year", Expense.date) == year,
-        ).all()
+            Expense.date >= start_date,
+            Expense.date < end_date,
+            Expense.transaction_type.in_(('debit', 'expense'))
+        )
+        result = await db.execute(stmt)
+        return result.scalars().all()
 
-    curr = monthly_expenses(current_month, current_year)
-    prev = monthly_expenses(prev_month, prev_year)
+    curr = await monthly_expenses(current_month, current_year)
+    prev = await monthly_expenses(prev_month, prev_year)
 
     curr_total = float(sum(e.amount for e in curr)) or 0
     prev_total = float(sum(e.amount for e in prev)) or 0
 
-    # Category totals
     def cat_totals(expenses):
         totals = {}
         for e in expenses:
@@ -39,15 +55,12 @@ def _compute_stats(db: Session, user_id: str) -> dict:
     curr_cats = cat_totals(curr)
     prev_cats = cat_totals(prev)
 
-    # Weekend vs weekday
     weekend = sum(float(e.amount) for e in curr if e.date.weekday() >= 5)
     weekday = sum(float(e.amount) for e in curr if e.date.weekday() < 5)
 
-    # Top category
     top_cat = max(curr_cats, key=curr_cats.get) if curr_cats else "N/A"
     top_cat_amount = curr_cats.get(top_cat, 0)
 
-    # MoM changes
     mom_changes = {}
     for cat in set(list(curr_cats.keys()) + list(prev_cats.keys())):
         c = curr_cats.get(cat, 0)
@@ -75,7 +88,7 @@ def _rule_based_insights(stats: dict) -> list[str]:
     weekend = stats["weekend_spend"]
     weekday = stats["weekday_spend"]
 
-    if weekday > 0:
+    if (weekday + weekend) > 0:
         ratio = weekend / (weekday + weekend) * 100
         insights.append(f"You spend {ratio:.0f}% of your budget on weekends — consider planning weekend outings in advance.")
 
@@ -114,10 +127,9 @@ Stats:
 
 Return ONLY a JSON array of 3 strings, nothing else. Example: ["insight 1", "insight 2", "insight 3"]"""
 
-        response = model.generate_content(prompt)
+        loop = asyncio.get_event_loop()
+        response = await loop.run_in_executor(_executor, lambda: model.generate_content(prompt))
         text = response.text.strip()
-        # Parse JSON array
-        import json
         if text.startswith("```"):
             text = text.split("```")[1]
             if text.startswith("json"):
@@ -130,41 +142,59 @@ Return ONLY a JSON array of 3 strings, nothing else. Example: ["insight 1", "ins
     return []
 
 
-async def generate_insights(db: Session, user_id: str) -> list[Insight]:
-    # Check cache: insights generated in last 24h
+async def generate_insights(db: AsyncSession, user_id: str) -> list[Insight]:
+    # Check cache
     cutoff = datetime.utcnow() - timedelta(hours=24)
-    cached = (
-        db.query(Insight)
-        .filter(Insight.user_id == user_id, Insight.generated_at >= cutoff)
-        .all()
-    )
+    stmt = select(Insight).where(Insight.user_id == user_id, Insight.generated_at >= cutoff)
+    result = await db.execute(stmt)
+    cached = result.scalars().all()
     if cached:
-        return cached
+        return list(cached)
 
-    # Delete old insights for this user
-    db.query(Insight).filter(Insight.user_id == user_id).delete()
+    try:
+        # Delete old
+        await db.execute(delete(Insight).where(Insight.user_id == user_id))
 
-    stats = _compute_stats(db, user_id)
+        stats = await _compute_stats(db, user_id)
+        logger.info(f"Stats computed for user {user_id}")
+    except Exception as e:
+        logger.error(f"Failed to compute stats for insights: {e}")
+        return []
 
-    # Try Gemini first, fall back to rule-based
+    # 1. Fetch High-Score Anomalies (Last 7 days)
+    anom_cutoff = date.today() - timedelta(days=7)
+    stmt_anom = select(Expense).where(
+        Expense.user_id == user_id,
+        Expense.is_anomaly == True,
+        Expense.is_verified == False, # Flagged as suspicious
+        Expense.date >= anom_cutoff
+    ).order_by(desc(Expense.anomaly_score))
+    res_anom = await db.execute(stmt_anom)
+    anomalies = res_anom.scalars().all()
+    
+    anomaly_texts = []
+    for a in anomalies[:2]: # Max 2 alerts
+        msg = f"🚨 Alert: {a.anomaly_explanation or f'Unusual spend of ₹{a.amount} detected in {a.category}.'}"
+        anomaly_texts.append(msg)
+
+    # 2. Gemini vs Rule-based for general trends
     gemini_insights = await _gemini_insights(stats)
-    if gemini_insights:
-        texts = gemini_insights
-    else:
-        texts = _rule_based_insights(stats)
+    texts = gemini_insights if gemini_insights else _rule_based_insights(stats)
 
-    # Ensure at least 3 insights
-    while len(texts) < 3:
-        texts.append("Keep tracking your expenses consistently to unlock more personalized insights!")
+    # 3. Merge alerts (Alerts first)
+    final_texts = anomaly_texts + texts
+
+    while len(final_texts) < 3:
+        final_texts.append("Keep tracking your expenses consistently to unlock more personalized insights!")
 
     new_insights = []
-    for text in texts[:3]:
+    for text in final_texts[:3]:
         ins = Insight(id=str(uuid.uuid4()), user_id=user_id, content=text)
         db.add(ins)
         new_insights.append(ins)
 
-    db.commit()
+    await db.commit()
     for ins in new_insights:
-        db.refresh(ins)
+        await db.refresh(ins)
 
     return new_insights

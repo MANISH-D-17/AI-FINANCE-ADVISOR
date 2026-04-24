@@ -3,12 +3,13 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import { HiOutlineMail, HiOutlineLockClosed } from 'react-icons/hi';
+import GoogleLoginButton from '../components/auth/GoogleLoginButton';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -20,8 +21,8 @@ const LoginPage = () => {
       navigate('/');
     } catch (error) {
       const errorData = error.response?.data?.detail;
-      const errorMsg = typeof errorData === 'string' 
-        ? errorData 
+      const errorMsg = typeof errorData === 'string'
+        ? errorData
         : (Array.isArray(errorData) ? errorData[0].msg : 'Login failed. Please check your credentials.');
       toast.error(errorMsg);
     } finally {
@@ -29,15 +30,41 @@ const LoginPage = () => {
     }
   };
 
+  const handleGoogleSuccess = async (data) => {
+    await loginWithGoogle(data);
+    toast.success(`Welcome back!`);
+    navigate('/');
+  };
+
+  const handleGoogleError = (msg) => {
+    toast.error(msg || 'Google sign-in failed.');
+  };
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-lightBg font-sans px-4">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
         <div className="text-center mb-10">
           <div className="flex justify-center mb-4">
-            <span className="bg-primary p-2.5 rounded-xl text-white text-2xl font-bold">AI</span>
+            <span className="bg-primary px-3 py-1.5 rounded-xl text-white text-sm font-black tracking-widest uppercase italic">Finance Intelligence</span>
           </div>
-          <h1 className="text-3xl font-extrabold text-navy tracking-tight">Welcome Back</h1>
+          <h1 className="text-3xl font-extrabold text-navy tracking-tight">Access Terminal</h1>
+
           <p className="text-gray-400 mt-2">Enter your credentials to access your dashboard</p>
+        </div>
+
+        {/* Google Sign-In */}
+        <div className="mb-5">
+          <GoogleLoginButton
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
+          />
+        </div>
+
+        {/* Divider */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+          <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }} />
+          <span style={{ color: '#9ca3af', fontSize: '13px', whiteSpace: 'nowrap' }}>or sign in with email</span>
+          <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }} />
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">

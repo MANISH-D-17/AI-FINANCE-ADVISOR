@@ -21,6 +21,12 @@ class BudgetProgress(BaseModel):
     percentage: float
 
 
+class AccountBreakdown(BaseModel):
+    account_name: str
+    total_expense: Decimal
+    total_income: Decimal
+
+
 class DashboardSummary(BaseModel):
     month: int
     year: int
@@ -31,4 +37,5 @@ class DashboardSummary(BaseModel):
     category_breakdown: list[CategoryBreakdown]
     weekly_spend: list[WeeklySpend]
     budget_progress: list[BudgetProgress]
+    account_breakdown: list[AccountBreakdown] = []
     alerts: list[str]

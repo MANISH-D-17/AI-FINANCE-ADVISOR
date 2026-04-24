@@ -1,0 +1,27 @@
+{
+  "model_version": "v3_ensemble",
+  "trained_at": "2026-04-24T06:18:20.543614",
+  "dataset_size": 2722,
+  "cv_accuracy_mean": 0.989,
+  "cv_accuracy_std": 0.0035,
+  "cv_scores": [
+    0.9872,
+    0.9927,
+    0.9835,
+    0.989,
+    0.9926
+  ],
+  "train_accuracy": 1.0,
+  "categories": [
+    "Bills",
+    "Entertainment",
+    "Food",
+    "Health",
+    "Income",
+    "Investments",
+    "Other",
+    "Shopping",
+    "Transfers",
+    "Travel"
+  ]
+}

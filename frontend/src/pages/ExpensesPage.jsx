@@ -2,13 +2,15 @@ import React, { useState } from 'react';
 import { useExpenses } from '../hooks/useFinance';
 import ExpenseForm from '../components/expenses/ExpenseForm';
 import ExpenseTable from '../components/expenses/ExpenseTable';
-import { HiOutlinePlus, HiOutlineX } from 'react-icons/hi';
+import { HiOutlinePlus, HiOutlineX, HiOutlineTrash } from 'react-icons/hi';
+
 
 const ExpensesPage = () => {
-  const { expenses, loading, addExpense, removeExpense, updateExpense } = useExpenses();
+  const { expenses, loading, addExpense, removeExpense, updateExpense, purgeExpenses } = useExpenses();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState(null);
   const [filter, setFilter] = useState('all');
+
 
   const filteredExpenses = filter === 'anomalies' 
     ? expenses.filter(e => e.is_anomaly) 
@@ -40,14 +42,28 @@ const ExpensesPage = () => {
           <h1 className="text-2xl font-bold text-navy-dark">Transaction History</h1>
           <p className="text-gray-500">View and manage your daily spending</p>
         </div>
-        <button 
-          onClick={handleAddClick}
-          className="btn-primary flex items-center gap-2"
-        >
-          <HiOutlinePlus className="w-5 h-5" />
-          Add Expense
-        </button>
+        <div className="flex gap-3">
+          <button 
+            onClick={() => {
+              if (window.confirm('CRITICAL ACTION: This will permanently delete ALL your financial records. This cannot be undone. Proceed?')) {
+                purgeExpenses();
+              }
+            }}
+            className="px-4 py-2 text-sm font-bold text-red-500 border border-red-100 rounded-xl hover:bg-red-50 transition-all flex items-center gap-2"
+          >
+            <HiOutlineTrash className="w-5 h-5" />
+            Clear All Data
+          </button>
+          <button 
+            onClick={handleAddClick}
+            className="btn-primary flex items-center gap-2"
+          >
+            <HiOutlinePlus className="w-5 h-5" />
+            Add Expense
+          </button>
+        </div>
       </div>
+
 
       <div className="flex border-b border-gray-100">
         <button 

@@ -8,9 +8,11 @@ from services.forecast_service import generate_forecast
 router = APIRouter(prefix="/forecast", tags=["Forecast"])
 
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
 @router.get("/monthly")
-def monthly_forecast(
-    db: Session = Depends(get_db),
+async def monthly_forecast(
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return generate_forecast(db, current_user.id)
+    return await generate_forecast(db, current_user.id)

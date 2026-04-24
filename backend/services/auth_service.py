@@ -2,7 +2,8 @@ from datetime import datetime, timedelta
 from typing import Optional
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from models.user import User
 from config import settings
 
@@ -32,24 +33,36 @@ def decode_token(token: str) -> Optional[dict]:
         return None
 
 
-def get_user_by_email(db: Session, email: str) -> Optional[User]:
-    return db.query(User).filter(User.email == email).first()
+async def get_user_by_email(db: AsyncSession, email: str) -> Optional[User]:
+    result = await db.execute(select(User).where(User.email == email))
+    return result.scalar_one_or_none()
 
 
-def get_user_by_id(db: Session, user_id: str) -> Optional[User]:
-    return db.query(User).filter(User.id == user_id).first()
+async def get_user_by_id(db: AsyncSession, user_id: str) -> Optional[User]:
+    result = await db.execute(select(User).where(User.id == user_id))
+    return result.scalar_one_or_none()
 
 
-def register_user(db: Session, email: str, password: str) -> User:
-    user = User(email=email, password_hash=hash_password(password))
+async def register_user(db: AsyncSession, email: str, password: str = None, full_name: str = None) -> User:
+    user = User(
+        email=email,
+        password_hash=hash_password(password) if password else None,
+        full_name=full_name,
+        auth_provider='email' if password else 'google',
+    )
     db.add(user)
-    db.commit()
-    db.refresh(user)
+    await db.commit()
+    await db.refresh(user)
     return user
 
 
-def authenticate_user(db: Session, email: str, password: str) -> Optional[User]:
-    user = get_user_by_email(db, email)
-    if not user or not verify_password(password, user.password_hash):
+async def authenticate_user(db: AsyncSession, email: str, password: str):
+    user = await get_user_by_email(db, email)
+    if not user:
+        return None
+    # Block email login for Google OAuth users
+    if user.auth_provider == 'google':
+        raise ValueError("This account uses Google Sign-In. Please click 'Continue with Google'.")
+    if not user.password_hash or not verify_password(password, user.password_hash):
         return None
     return user

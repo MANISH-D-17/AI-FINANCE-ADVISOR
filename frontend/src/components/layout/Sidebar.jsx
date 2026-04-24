@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
   HiOutlineViewGrid, 
@@ -24,45 +24,79 @@ const navItems = [
 
 const Sidebar = () => {
   const { logout } = useAuth();
+  const [isHovered, setIsHovered] = useState(false);
 
   return (
-    <div className="flex flex-col w-64 h-screen bg-navy text-white transition-all duration-300">
-      <div className="flex items-center justify-center h-20 border-b border-navy-light">
-        <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-          <span className="bg-primary p-1.5 rounded-lg text-white">AI</span>
-          <span className="tracking-tight text-xl font-semibold">CFO</span>
-        </h1>
-      </div>
-      
-      <nav className="flex-1 px-4 py-8 space-y-2">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.name}
-            to={item.path}
-            className={({ isActive }) => `
-              flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200
-              ${isActive 
-                ? 'bg-primary text-white shadow-lg shadow-primary/20' 
-                : 'text-gray-400 hover:bg-navy-light hover:text-white'}
-            `}
-          >
-            <item.icon className="w-5 h-5 mr-3" />
-            {item.name}
-          </NavLink>
-        ))}
-      </nav>
+    <>
+      {/* Spacer to push content when sidebar is collapsed */}
+      <div className="w-20 flex-shrink-0 transition-all duration-300"></div>
 
-      <div className="px-4 py-6 border-t border-navy-light">
-        <button
-          onClick={logout}
-          className="flex items-center w-full px-4 py-3 text-sm font-medium text-gray-400 rounded-xl hover:bg-red-500/10 hover:text-red-400 transition-all duration-200"
-        >
-          <HiOutlineLogout className="w-5 h-5 mr-3" />
-          Logout
-        </button>
+      <div 
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        className={`
+          fixed left-0 top-0 h-screen bg-navy text-white z-50 
+          transition-all duration-300 ease-in-out shadow-2xl
+          ${isHovered ? 'w-64' : 'w-20'}
+          flex flex-col border-r border-white/5
+        `}
+      >
+        {/* Logo Section */}
+        <div className="flex items-center h-20 border-b border-white/5 px-6 overflow-hidden">
+          <div className="flex-shrink-0 bg-primary p-2 rounded-xl h-10 w-10 flex items-center justify-center font-black text-white">
+            FI
+          </div>
+          <div className={`ml-4 transition-all duration-300 overflow-hidden whitespace-nowrap ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
+            <h1 className="text-sm font-black flex flex-col uppercase leading-tight">
+              <span className="text-primary text-[10px] tracking-widest">Finance</span>
+              <span className="tracking-tighter">Intelligence</span>
+            </h1>
+          </div>
+        </div>
+
+        {/* Navigation Items */}
+        <nav className="flex-1 px-3 py-8 space-y-3 overflow-y-auto overflow-x-hidden scrollbar-hide">
+          {navItems.map((item) => (
+            <NavLink
+              key={item.name}
+              to={item.path}
+              className={({ isActive }) => `
+                flex items-center px-4 py-3.5 text-sm font-medium rounded-2xl transition-all duration-200 group
+                ${isActive 
+                  ? 'bg-primary text-white shadow-lg shadow-primary/30' 
+                  : 'text-slate-400 hover:bg-white/5 hover:text-white'}
+              `}
+            >
+              <item.icon className={`w-6 h-6 flex-shrink-0 ${isHovered ? 'mr-4' : 'mr-0'} transition-all duration-200`} />
+              <span className={`
+                transition-all duration-300 whitespace-nowrap
+                ${isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4 pointer-events-none'}
+              `}>
+                {item.name}
+              </span>
+            </NavLink>
+          ))}
+        </nav>
+
+        {/* Footer / Logout */}
+        <div className="px-3 py-6 border-t border-white/5">
+          <button
+            onClick={logout}
+            className="flex items-center w-full px-4 py-3.5 text-sm font-medium text-slate-400 rounded-2xl hover:bg-rose-500/10 hover:text-rose-400 transition-all duration-200 overflow-hidden"
+          >
+            <HiOutlineLogout className={`w-6 h-6 flex-shrink-0 transition-all duration-200 ${isHovered ? 'mr-4' : 'mr-0'}`} />
+            <span className={`
+              transition-all duration-300 whitespace-nowrap
+              ${isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-4 pointer-events-none'}
+            `}>
+              Logout
+            </span>
+          </button>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 
 export default Sidebar;
+

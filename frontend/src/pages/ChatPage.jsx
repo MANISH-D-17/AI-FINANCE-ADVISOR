@@ -1,13 +1,21 @@
 import React, { useState, useRef, useEffect } from 'react';
 import apiClient from '../api/client';
-import { HiOutlineChatAlt2, HiOutlineUser, HiOutlinePaperAirplane, HiOutlineSparkles } from 'react-icons/hi';
+import { 
+  HiOutlineChatAlt2, 
+  HiOutlineUser, 
+  HiOutlinePaperAirplane, 
+  HiOutlineSparkles,
+  HiOutlineDatabase,
+  HiOutlineSearch,
+  HiOutlineChartBar
+} from 'react-icons/hi';
 import toast from 'react-hot-toast';
 
 const ChatPage = () => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [thinkingLabel, setThinkingLabel] = useState('Thinking');
+  const [reasoningStep, setReasoningStep] = useState(null);
   const messagesEndRef = useRef(null);
 
   const fetchHistory = async () => {
@@ -16,7 +24,7 @@ const ChatPage = () => {
       if (res.data.length > 0) {
         setMessages(res.data);
       } else {
-        setMessages([{ role: 'assistant', content: "Hello! I'm your AI CFO. I have access to your live financial data, budgets, and forecasts. Ask me anything like 'How is my health score?' or 'Set a budget of 5000 for Shopping'." }]);
+        setMessages([{ role: 'assistant', content: "Hello! I'm your Elite AI CFO. I've analyzed your multi-account portfolio. How can I assist with your financial strategy today?" }]);
       }
     } catch (err) {
       console.error('Failed to fetch history');
@@ -33,7 +41,7 @@ const ChatPage = () => {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, reasoningStep]);
 
   const handleSend = async (e) => {
     e.preventDefault();
@@ -45,67 +53,85 @@ const ChatPage = () => {
     setInput('');
     setLoading(true);
     
-    // Rotate thinking labels for "agentic" feel
-    const labels = ["Checking your expenses...", "Analyzing budgets...", "Calculating trends...", "Thinking..."];
-    let i = 0;
+    // Simulate agentic reasoning steps
+    const steps = [
+      { label: "Querying Multi-Account Portfolio", icon: <HiOutlineDatabase /> },
+      { label: "Analyzing Transaction Patterns", icon: <HiOutlineSearch /> },
+      { label: "Cross-referencing Budgets & Forecasts", icon: <HiOutlineChartBar /> },
+      { label: "Finalizing Financial Advice", icon: <HiOutlineSparkles /> }
+    ];
+
+    let currentStep = 0;
     const interval = setInterval(() => {
-      setThinkingLabel(labels[i % labels.length]);
-      i++;
-    }, 2000);
+      setReasoningStep(steps[currentStep]);
+      currentStep++;
+      if (currentStep >= steps.length) clearInterval(interval);
+    }, 1500);
 
     try {
       const response = await apiClient.post('/chat', {
         messages: [{ role: 'user', content: input }] 
       });
-      setMessages([...newMessages, { role: 'assistant', content: response.data.reply }]);
+      // Small delay to let the reasoning feel real
+      setTimeout(() => {
+        setMessages([...newMessages, { role: 'assistant', content: response.data.reply }]);
+        setLoading(false);
+        setReasoningStep(null);
+      }, 1000);
     } catch (error) {
-      toast.error('AI is a bit overwhelmed. Try again later.');
-    } finally {
-      clearInterval(interval);
+      toast.error('AI Strategy engine is refreshing. Please wait.');
       setLoading(false);
-      setThinkingLabel('Thinking');
-    }
+      setReasoningStep(null);
+    } 
   };
 
   return (
-    <div className="max-w-4xl mx-auto h-[calc(100vh-160px)] flex flex-col">
-      <div className="flex-1 overflow-y-auto px-4 py-8 space-y-6 scrollbar-hide">
+    <div className="max-w-4xl mx-auto h-[calc(100vh-140px)] flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="flex-1 overflow-y-auto px-6 py-10 space-y-8 scrollbar-hide">
         {messages.map((msg, i) => (
           <div 
             key={i} 
-            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-300`}
+            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-500`}
           >
-            <div className={`flex gap-3 max-w-[80%] ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+            <div className={`flex gap-4 max-w-[85%] ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
               <div className={`
-                w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0
-                ${msg.role === 'user' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'bg-white border border-gray-100 text-primary shadow-sm'}
+                w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0
+                ${msg.role === 'user' 
+                  ? 'premium-gradient text-white shadow-xl shadow-primary/30' 
+                  : 'glass-card !p-0 border-none bg-white text-primary shadow-lg shadow-slate-200/50'}
               `}>
-                {msg.role === 'user' ? <HiOutlineUser className="w-6 h-6" /> : <HiOutlineSparkles className="w-6 h-6" />}
+                {msg.role === 'user' ? <HiOutlineUser className="w-6 h-6" /> : <HiOutlineSparkles className="w-6 h-6 animate-pulse-soft" />}
               </div>
               <div className={`
-                px-5 py-4 rounded-2xl shadow-sm text-sm leading-relaxed
-                ${msg.role === 'user' ? 'bg-navy text-white rounded-tr-none' : 'bg-white text-navy-dark border border-gray-50 rounded-tl-none'}
+                px-6 py-5 rounded-3xl shadow-xl text-base leading-relaxed
+                ${msg.role === 'user' 
+                  ? 'bg-navy-dark text-white rounded-tr-none shadow-navy/20' 
+                  : 'glass-card border-none text-navy-dark rounded-tl-none'}
               `}>
                 {msg.content}
               </div>
             </div>
           </div>
         ))}
+
         {loading && (
           <div className="flex justify-start">
-            <div className="flex gap-3 max-w-[80%] items-center">
-              <div className="w-10 h-10 rounded-2xl bg-white border border-gray-100 text-primary flex items-center justify-center animate-pulse">
-                <HiOutlineSparkles className="w-6 h-6" />
+            <div className="flex gap-4 max-w-[85%] items-start">
+              <div className="w-12 h-12 rounded-2xl glass-card !p-0 flex items-center justify-center animate-pulse">
+                <HiOutlineSparkles className="w-6 h-6 text-primary" />
               </div>
-              <div className="bg-white border border-gray-50 px-5 py-4 rounded-2xl rounded-tl-none flex flex-col gap-2">
-                <div className="flex gap-1">
-                  <span className="w-1.5 h-1.5 bg-gray-300 rounded-full animate-bounce"></span>
-                  <span className="w-1.5 h-1.5 bg-gray-300 rounded-full animate-bounce delay-100"></span>
-                  <span className="w-1.5 h-1.5 bg-gray-300 rounded-full animate-bounce delay-200"></span>
+              <div className="glass-card border-none px-6 py-5 rounded-3xl rounded-tl-none space-y-4 min-w-[280px]">
+                <div className="flex gap-1.5">
+                  <span className="w-2 h-2 bg-primary/40 rounded-full animate-bounce"></span>
+                  <span className="w-2 h-2 bg-primary/40 rounded-full animate-bounce delay-150"></span>
+                  <span className="w-2 h-2 bg-primary/40 rounded-full animate-bounce delay-300"></span>
                 </div>
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest animate-pulse">
-                  {thinkingLabel}
-                </span>
+                {reasoningStep && (
+                  <div className="flex items-center gap-2.5 text-xs font-bold text-slate-400 uppercase tracking-widest animate-in fade-in slide-in-from-left-2 duration-300">
+                    <span className="text-primary text-base">{reasoningStep.icon}</span>
+                    {reasoningStep.label}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -113,29 +139,39 @@ const ChatPage = () => {
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="mt-auto px-4 pb-4">
-        <form 
-          onSubmit={handleSend}
-          className="bg-white rounded-3xl shadow-2xl shadow-navy/5 border border-gray-100 p-2 flex items-center gap-2"
-        >
-          <input
-            type="text"
-            className="flex-1 bg-transparent border-none outline-none px-4 py-3 text-navy-dark placeholder-gray-400"
-            placeholder="Ask your AI CFO anything..."
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-          />
-          <button
-            type="submit"
-            disabled={!input.trim() || loading}
-            className="w-11 h-11 bg-primary text-white rounded-2xl flex items-center justify-center hover:bg-primary-dark transition-all shadow-lg shadow-primary/20 disabled:bg-gray-200 disabled:shadow-none"
+      <div className="mt-auto px-6 pb-6 pt-2">
+        <div className="glass-card !p-2 flex flex-col gap-2 shadow-2xl shadow-navy/10 relative">
+          <form 
+            onSubmit={handleSend}
+            className="flex items-center gap-3 p-1"
           >
-            <HiOutlinePaperAirplane className="w-5 h-5 rotate-90" />
-          </button>
-        </form>
-        <p className="text-center text-[10px] text-gray-400 mt-3 font-medium uppercase tracking-widest">
-          AI uses your live expense data from the last 30 days as context.
-        </p>
+            <input
+              type="text"
+              className="flex-1 bg-transparent border-none outline-none px-4 py-3 text-navy-dark placeholder-slate-400 font-medium"
+              placeholder="Query your financial strategy engine..."
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+            />
+            <button
+              type="submit"
+              disabled={!input.trim() || loading}
+              className="w-12 h-12 premium-gradient text-white rounded-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-xl shadow-primary/30 disabled:opacity-20 disabled:scale-100"
+            >
+              <HiOutlinePaperAirplane className="w-6 h-6 rotate-90" />
+            </button>
+          </form>
+          
+          <div className="flex items-center gap-6 px-4 py-2 border-t border-slate-100">
+             <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                <HiOutlineChatAlt2 className="w-4 h-4 text-primary" />
+                Live Contextual Agent
+             </div>
+             <div className="flex-1 h-px bg-slate-50"></div>
+             <p className="text-[10px] text-slate-300 font-medium uppercase tracking-widest">
+               Portoflio Snapshot: 2026/04/20
+             </p>
+          </div>
+        </div>
       </div>
     </div>
   );

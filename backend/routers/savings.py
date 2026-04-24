@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, delete
 from database import get_db
 from dependencies import get_current_user
 from models.user import User
@@ -9,18 +10,25 @@ from typing import List
 
 router = APIRouter(prefix="/savings", tags=["Savings Goals"])
 
+
 @router.get("", response_model=List[SavingsGoalResponse])
-def get_goals(
-    db: Session = Depends(get_db),
+async def get_goals(
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """List all savings goals for the current user."""
-    return db.query(SavingsGoal).filter(SavingsGoal.user_id == current_user.id).all()
+    """List all savings goals for the current user with intelligence metrics."""
+    stmt = select(SavingsGoal).where(SavingsGoal.user_id == current_user.id)
+    result = await db.execute(stmt)
+    goals = result.scalars().all()
+    
+    from services.savings_service import get_goal_with_intelligence
+    return [await get_goal_with_intelligence(db, g, current_user.id) for g in goals]
+
 
 @router.post("", response_model=SavingsGoalResponse)
-def create_goal(
+async def create_goal(
     data: SavingsGoalCreate,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """Create a new savings goal."""
@@ -29,40 +37,48 @@ def create_goal(
         **data.model_dump()
     )
     db.add(goal)
-    db.commit()
-    db.refresh(goal)
+    await db.commit()
+    await db.refresh(goal)
     return goal
 
+
 @router.put("/{goal_id}", response_model=SavingsGoalResponse)
-def update_goal(
+async def update_goal(
     goal_id: str,
     data: SavingsGoalUpdate,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """Update an existing goal or add to current contribution."""
-    goal = db.query(SavingsGoal).filter(SavingsGoal.id == goal_id, SavingsGoal.user_id == current_user.id).first()
+    stmt = select(SavingsGoal).where(SavingsGoal.id == goal_id, SavingsGoal.user_id == current_user.id)
+    result = await db.execute(stmt)
+    goal = result.scalar_one_or_none()
+    
     if not goal:
         raise HTTPException(status_code=404, detail="Goal not found")
     
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(goal, field, value)
     
-    db.commit()
-    db.refresh(goal)
+    await db.commit()
+    await db.refresh(goal)
     return goal
 
+
 @router.delete("/{goal_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_goal(
+async def delete_goal(
     goal_id: str,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """Delete a savings goal."""
-    goal = db.query(SavingsGoal).filter(SavingsGoal.id == goal_id, SavingsGoal.user_id == current_user.id).first()
+    stmt = select(SavingsGoal).where(SavingsGoal.id == goal_id, SavingsGoal.user_id == current_user.id)
+    result = await db.execute(stmt)
+    goal = result.scalar_one_or_none()
+    
     if not goal:
         raise HTTPException(status_code=404, detail="Goal not found")
     
-    db.delete(goal)
-    db.commit()
+    await db.delete(goal)
+    await db.commit()
     return None

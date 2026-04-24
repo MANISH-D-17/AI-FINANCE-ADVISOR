@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 from database import get_db
 from dependencies import get_current_user
@@ -13,12 +13,12 @@ router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
 
 @router.get("/export")
-def export_monthly_report(
-    db: Session = Depends(get_db),
+async def export_monthly_report(
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """Export the monthly financial report as a PDF."""
-    pdf_buffer = generate_monthly_report_pdf(db, current_user.id)
+    pdf_buffer = await generate_monthly_report_pdf(db, current_user.id)
     return StreamingResponse(
         pdf_buffer, 
         media_type="application/pdf",
@@ -27,17 +27,17 @@ def export_monthly_report(
 
 
 @router.get("/summary")
-def dashboard_summary(
+async def dashboard_summary(
     month: Optional[int] = None,
     year: Optional[int] = None,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     cache_key = f"summary_{current_user.id}_{month}_{year}"
-    cached_data = get_cached(cache_key)
+    cached_data = await get_cached(cache_key)
     if cached_data:
         return cached_data
     
-    summary = get_dashboard_summary(db, current_user.id, month, year)
-    set_cached(cache_key, summary, expire_seconds=300)
+    summary = await get_dashboard_summary(db, current_user.id, month, year)
+    await set_cached(cache_key, summary, expire_seconds=300)
     return summary

@@ -1,0 +1,95 @@
+description,category
+UPI-SWIGGY-1,Food
+UPI-SWIGGY-2,Food
+UBER RIDE 1,Travel
+OLA CAB 2,Travel
+AMAZON ORDER 1,Shopping
+FLIPKART ORDER 2,Shopping
+AIRTEL BILL,Bills
+JIO RECHARGE,Bills
+NETFLIX SUBS,Entertainment
+SPOTIFY SUBS,Entertainment
+PHARMACY BILL,Health
+HOSPITAL VISIT,Health
+HDFC SALARY MAR,Income
+AXIS SALARY APR,Income
+MUTUAL FUND SIP,Investments
+STOCK PURCHASE,Investments
+SELF TRANSFER AC,Transfers
+FUNDS TO FAMILY,Transfers
+Swiggy order,Food
+Zomato delivery,Food
+McDonald's,Food
+Pizza Hut order,Food
+restaurant dinner,Food
+cafe coffee,Food
+grocery store,Food
+Big Basket order,Food
+Dunzo groceries,Food
+Starbucks coffee,Food
+biryani order,Food
+uber eats,Food
+lunch at office canteen,Food
+dinner party,Food
+milk and bread,Food
+Ola cab,Travel
+Uber ride,Travel
+flight ticket,Travel
+train ticket IRCTC,Travel
+hotel booking,Travel
+Airbnb stay,Travel
+bus ticket,Travel
+auto rickshaw,Travel
+rapido bike,Travel
+airport taxi,Travel
+petrol fill,Travel
+toll charge,Travel
+Amazon purchase,Shopping
+Flipkart order,Shopping
+Myntra clothes,Shopping
+AJIO shopping,Shopping
+Nykaa beauty,Shopping
+book purchase,Shopping
+H&M clothing,Shopping
+Zara shopping,Shopping
+mall shopping,Shopping
+Nike shoes,Shopping
+electronics purchase,Shopping
+mobile phone accessories,Shopping
+furniture purchase,Shopping
+home decor item,Shopping
+electricity bill,Bills
+wifi internet bill,Bills
+water bill,Bills
+gas cylinder,Bills
+house rent,Bills
+credit card bill,Bills
+phone recharge,Bills
+broadband bill,Bills
+insurance premium,Bills
+society maintenance,Bills
+Netflix subscription,Entertainment
+Spotify premium,Entertainment
+movie tickets,Entertainment
+BookMyShow,Entertainment
+gaming purchase,Entertainment
+Amazon Prime,Entertainment
+Disney+ Hotstar,Entertainment
+concert tickets,Entertainment
+amusement park,Entertainment
+video game,Entertainment
+doctor consultation,Health
+pharmacy medicines,Health
+hospital bill,Health
+gym membership,Health
+yoga class,Health
+dental appointment,Health
+pathology test,Health
+health insurance,Health
+eye checkup,Health
+nutritionist fee,Health
+miscellaneous purchase,Other
+ATM withdrawal,Other
+charity donation,Other
+gift purchase,Other
+stationery items,Other

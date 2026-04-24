@@ -1,5 +1,5 @@
-from sqlalchemy.orm import Session
-from sqlalchemy import extract
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, extract
 from models.expense import Expense
 from models.budget import Budget
 from models.user import User
@@ -8,17 +8,25 @@ from decimal import Decimal
 import statistics
 
 
-def compute_health_score(db: Session, user_id: str) -> dict:
+async def compute_health_score(db: AsyncSession, user_id: str) -> dict:
     today = date.today()
-    user = db.query(User).filter(User.id == user_id).first()
+    
+    # Fetch User
+    stmt_user = select(User).where(User.id == user_id)
+    result_user = await db.execute(stmt_user)
+    user = result_user.scalar_one_or_none()
     income = float(user.income or 0) if user else 0
 
-    # Current month expenses
-    curr_month_expenses = db.query(Expense).filter(
+    # Current month expenses — EXCLUDE transfers
+    stmt_expenses = select(Expense).where(
         Expense.user_id == user_id,
         extract("month", Expense.date) == today.month,
         extract("year", Expense.date) == today.year,
-    ).all()
+        Expense.transaction_type.in_(('debit', 'expense')),
+        Expense.is_transfer == False
+    )
+    result_expenses = await db.execute(stmt_expenses)
+    curr_month_expenses = result_expenses.scalars().all()
     month_total = float(sum(e.amount for e in curr_month_expenses)) or 0
 
     # Savings ratio score (40 pts)
@@ -29,7 +37,10 @@ def compute_health_score(db: Session, user_id: str) -> dict:
         savings_score = 20  # neutral if no income set
 
     # Budget adherence score (30 pts)
-    budgets = db.query(Budget).filter(Budget.user_id == user_id).all()
+    stmt_budgets = select(Budget).where(Budget.user_id == user_id)
+    result_budgets = await db.execute(stmt_budgets)
+    budgets = result_budgets.scalars().all()
+    
     if budgets:
         cat_totals = {}
         for e in curr_month_expenses:
@@ -39,11 +50,16 @@ def compute_health_score(db: Session, user_id: str) -> dict:
     else:
         adherence_score = 15  # neutral
 
-    # Spending variance score (20 pts): stable weekly spend is better
-    last_90_days = db.query(Expense).filter(
+    # Spending variance score (20 pts)
+    cutoff = today - timedelta(days=90)
+    stmt_90 = select(Expense).where(
         Expense.user_id == user_id,
-        Expense.date >= today - timedelta(days=90),
-    ).all()
+        Expense.date >= cutoff,
+        Expense.transaction_type.in_(('debit', 'expense')),
+        Expense.is_transfer == False
+    )
+    result_90 = await db.execute(stmt_90)
+    last_90_days = result_90.scalars().all()
 
     weekly_totals = {}
     for e in last_90_days:
@@ -57,13 +73,18 @@ def compute_health_score(db: Session, user_id: str) -> dict:
     else:
         variance_score = 10
 
-    # Consistency score (10 pts): penalize if > 2 categories spiked > 50% MoM
+    # Consistency score (10 pts)
     prev_month_start = (today.replace(day=1) - timedelta(days=1)).replace(day=1)
-    prev_expenses = db.query(Expense).filter(
+    stmt_prev = select(Expense).where(
         Expense.user_id == user_id,
         extract("month", Expense.date) == prev_month_start.month,
         extract("year", Expense.date) == prev_month_start.year,
-    ).all()
+        Expense.transaction_type.in_(('debit', 'expense')),
+        Expense.is_transfer == False
+    )
+    result_prev = await db.execute(stmt_prev)
+    prev_expenses = result_prev.scalars().all()
+    
     prev_cat = {}
     for e in prev_expenses:
         prev_cat[e.category] = prev_cat.get(e.category, 0) + float(e.amount)

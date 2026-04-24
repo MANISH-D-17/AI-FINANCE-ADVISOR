@@ -3,14 +3,25 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import { HiOutlineMail, HiOutlineLockClosed } from 'react-icons/hi';
+import GoogleLoginButton from '../components/auth/GoogleLoginButton';
 
 const RegisterPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { register } = useAuth();
+  const { register, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
+
+  const handleGoogleSuccess = async (data) => {
+    await loginWithGoogle(data);
+    toast.success('Account created! Welcome to AI Finance Advisor.');
+    navigate('/');
+  };
+
+  const handleGoogleError = (msg) => {
+    toast.error(msg || 'Google sign-up failed.');
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -37,14 +48,30 @@ const RegisterPage = () => {
   return (
     <div className="flex items-center justify-center min-h-screen bg-lightBg font-sans px-4">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
-        <div className="text-center mb-10">
+        <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <span className="bg-primary p-2.5 rounded-xl text-white text-2xl font-bold">AI</span>
+            <span className="bg-primary px-3 py-1.5 rounded-xl text-white text-sm font-black tracking-widest uppercase italic">Finance Intelligence</span>
           </div>
-          <h1 className="text-3xl font-extrabold text-navy tracking-tight">Create Account</h1>
+          <h1 className="text-3xl font-extrabold text-navy tracking-tight">Establish Account</h1>
+
           <p className="text-gray-400 mt-2">Start managing your finances like a pro</p>
         </div>
 
+        {/* Google Sign-Up */}
+        <div className="mb-5">
+          <GoogleLoginButton
+            label="Sign up with Google"
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
+          />
+        </div>
+
+        {/* Divider */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+          <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }} />
+          <span style={{ color: '#9ca3af', fontSize: '13px', whiteSpace: 'nowrap' }}>or register with email</span>
+          <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }} />
+        </div>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-1.5">Email Address</label>

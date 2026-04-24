@@ -4,6 +4,74 @@ import pandas as pd
 from datetime import datetime
 import re
 import hashlib
+from typing import Optional
+
+
+# ─── Standalone amount / reconciliation utilities ─────────────────────────────
+
+def parse_amount(raw) -> float:
+    """
+    Parse Indian bank amount in any format to float.
+
+    Handles:
+    - "1,20,000.50"  → 120000.50  (Indian lakh formatting)
+    - "₹ 1,500"      → 1500.0
+    - "1500.00 Dr"   → 1500.0     (suffix indicating debit — handled separately by caller)
+    - "1,500"        → 1500.0
+    - "(1,500.00)"   → 1500.0     (parentheses = negative in some banks; sign ignored here)
+    - ""             → 0.0
+    """
+    if raw is None:
+        return 0.0
+    raw = str(raw).strip()
+    # Remove currency symbols
+    raw = raw.replace('₹', '').replace('INR', '').replace('Rs.', '').replace('Rs', '')
+    # Remove Dr/Cr suffixes (type is handled by caller)
+    raw = re.sub(r'\s*(Dr|Cr|DR|CR|D|C)\s*$', '', raw, flags=re.IGNORECASE)
+    # Remove parentheses (some banks use for negatives)
+    raw = raw.replace('(', '').replace(')', '')
+    # Remove all commas (Indian lakh formatting: 1,20,000)
+    raw = raw.replace(',', '')
+    raw = raw.strip()
+    try:
+        return float(raw) if raw else 0.0
+    except ValueError:
+        return 0.0
+
+
+def reconcile_statement(
+    transactions: list,
+    opening_balance: float,
+    closing_balance: float
+) -> dict:
+    """
+    Verify: opening_balance + sum(credits) - sum(debits) ≈ closing_balance
+    Tolerance: ₹1 (rounding errors in PDFs are common).
+
+    Returns:
+    {
+        "is_valid": bool,
+        "expected_closing": float,
+        "actual_closing": float,
+        "discrepancy": float,
+        "warning": Optional[str]
+    }
+    """
+    total_credits = sum(parse_amount(t.get('amount', 0)) for t in transactions if t.get('type') == 'credit')
+    total_debits  = sum(parse_amount(t.get('amount', 0)) for t in transactions if t.get('type') == 'debit')
+    expected = opening_balance + total_credits - total_debits
+    discrepancy = abs(expected - closing_balance)
+
+    return {
+        "is_valid": discrepancy <= 1.0,
+        "expected_closing": round(expected, 2),
+        "actual_closing": round(closing_balance, 2),
+        "discrepancy": round(discrepancy, 2),
+        "warning": (
+            f"Discrepancy of ₹{discrepancy:.2f} — some transactions may be missing"
+            if discrepancy > 1.0 else None
+        ),
+    }
 
 class PDFParser:
     @staticmethod
@@ -13,6 +81,7 @@ class PDFParser:
         This is significantly more robust than table extraction for bank statements.
         """
         transactions = []
+        bank_name = PDFParser._detect_bank(file_content)
         
         try:
             with pdfplumber.open(io.BytesIO(file_content), password=password) as pdf:
@@ -43,7 +112,7 @@ class PDFParser:
                         for y_coord, line_words in lines.items():
                             if new_mappings and y_coord <= header_y: continue # Skip headers on current page
                             
-                            row_data = PDFParser._map_words_to_columns(line_words, active_mappings, page_num=page_num)
+                            row_data = PDFParser._map_words_to_columns(line_words, active_mappings, page_num=page_num, bank_name=bank_name)
                             if row_data:
                                 transactions.append(row_data)
 
@@ -121,7 +190,7 @@ class PDFParser:
         return 0, None
 
     @staticmethod
-    def _map_words_to_columns(words, mappings, page_num=1):
+    def _map_words_to_columns(words, mappings, page_num=1, bank_name="Primary"):
         """Maps words in a line to specific columns based on X position."""
         res = {'date': '', 'desc': '', 'amt': 0.0, 'type': 'debit'}
         
@@ -207,11 +276,19 @@ class PDFParser:
         return None
 
     @staticmethod
-    def _clean_amt(val):
-        if not val: return 0.0
-        s = re.sub(r'[^\d.]', '', str(val).replace(',', ''))
-        try: return float(s) if s else 0.0
-        except: return 0.0
+    def _clean_amt(val) -> float:
+        """Delegate to the module-level parse_amount for consistency."""
+        return parse_amount(val)
+
+    @staticmethod
+    def _detect_bank(content: bytes) -> str:
+        text = content[:2000].decode('utf-8', errors='ignore').lower()
+        if 'hdfc' in text: return "HDFC"
+        if 'axis' in text: return "Axis"
+        if 'canara' in text: return "Canara"
+        if 'sbi' in text: return "SBI"
+        if 'icici' in text: return "ICICI"
+        return "Other Account"
 
     @staticmethod
     def parse_pdf(file_content: bytes, password: str = None) -> list[dict]:

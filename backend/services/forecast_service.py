@@ -7,6 +7,11 @@ from datetime import date, timedelta
 from pathlib import Path
 import pickle
 import warnings
+import asyncio
+from prophet import Prophet
+from concurrent.futures import ThreadPoolExecutor
+
+_executor = ThreadPoolExecutor(max_workers=3)
 
 warnings.filterwarnings("ignore")
 
@@ -14,8 +19,18 @@ ML_MODELS_DIR = Path(__file__).parent.parent / "ml" / "models"
 MIN_DAYS_FOR_PROPHET = 30
 
 
-def _get_daily_spend_df(db: Session, user_id: str) -> pd.DataFrame:
-    expenses = db.query(Expense).filter(Expense.user_id == user_id).all()
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+
+async def _get_daily_spend_df(db: AsyncSession, user_id: str) -> pd.DataFrame:
+    # IMPORTANT: Only include actual debit expenses. Exclude transfers and credits.
+    stmt = select(Expense).where(
+        Expense.user_id == user_id,
+        Expense.transaction_type.in_(['debit', 'expense']),
+        Expense.is_transfer == False
+    )
+    result = await db.execute(stmt)
+    expenses = result.scalars().all()
     if not expenses:
         return pd.DataFrame(columns=["ds", "y"])
     records = [{"ds": str(e.date), "y": float(e.amount)} for e in expenses]
@@ -25,8 +40,8 @@ def _get_daily_spend_df(db: Session, user_id: str) -> pd.DataFrame:
     return df
 
 
-def generate_forecast(db: Session, user_id: str) -> ForecastResponse:
-    df = _get_daily_spend_df(db, user_id)
+async def generate_forecast(db: AsyncSession, user_id: str) -> ForecastResponse:
+    df = await _get_daily_spend_df(db, user_id)
 
     today = date.today()
     future_dates = [today + timedelta(days=i) for i in range(1, 31)]
@@ -53,13 +68,15 @@ def generate_forecast(db: Session, user_id: str) -> ForecastResponse:
 
     # Try Prophet
     try:
-        from prophet import Prophet
+        loop = asyncio.get_event_loop()
+        
+        def run_prophet():
+            m = Prophet(daily_seasonality=False, weekly_seasonality=True, yearly_seasonality=False)
+            m.fit(df)
+            fut = m.make_future_dataframe(periods=30)
+            return m.predict(fut)
 
-        model = Prophet(daily_seasonality=False, weekly_seasonality=True, yearly_seasonality=False)
-        model.fit(df)
-
-        future = model.make_future_dataframe(periods=30)
-        forecast_df = model.predict(future)
+        forecast_df = await loop.run_in_executor(_executor, run_prophet)
         future_only = forecast_df[forecast_df["ds"] > pd.Timestamp(today)].head(30)
 
         points = [

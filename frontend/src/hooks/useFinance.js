@@ -52,12 +52,23 @@ export const useExpenses = () => {
     }
   };
 
+  const purgeExpenses = async () => {
+    try {
+      await apiClient.post('/expenses/purge-data');
+      setExpenses([]);
+      toast.success('All data cleared');
+    } catch (error) {
+      toast.error('Failed to clear data');
+    }
+  };
+
   useEffect(() => {
     fetchExpenses();
   }, []);
 
-  return { expenses, loading, fetchExpenses, addExpense, removeExpense, updateExpense };
+  return { expenses, loading, fetchExpenses, addExpense, removeExpense, updateExpense, purgeExpenses };
 };
+
 
 export const useDashboard = () => {
   const [summary, setSummary] = useState(null);
@@ -104,4 +115,32 @@ export const useMLMetrics = () => {
   }, []);
 
   return { metrics, loading, fetchMetrics };
+};
+
+export const useNetWorth = () => {
+  const [netWorth, setNetWorth] = useState(null);
+  const [trends, setTrends] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchNetWorth = async () => {
+    setLoading(true);
+    try {
+      const [summaryRes, trendsRes] = await Promise.all([
+        apiClient.get('/dashboard/net-worth/summary'),
+        apiClient.get('/dashboard/net-worth/trends')
+      ]);
+      setNetWorth(summaryRes.data);
+      setTrends(trendsRes.data);
+    } catch (error) {
+      console.error('Failed to load net worth data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchNetWorth();
+  }, []);
+
+  return { netWorth, trends, loading, fetchNetWorth };
 };

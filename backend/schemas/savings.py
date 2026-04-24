@@ -27,6 +27,12 @@ class SavingsGoalResponse(BaseModel):
     deadline: Optional[date]
     created_at: datetime
     updated_at: Optional[datetime]
+    
+    # Intelligence Fields
+    progress_percentage: float = 0.0
+    estimated_completion_date: Optional[date] = None
+    is_on_track: bool = True
+    status_message: str = "Goal started!"
 
     class Config:
         from_attributes = True

@@ -1,10 +1,11 @@
 import resend
 from config import settings
 from services import dashboard_service
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from models.user import User
 
-def send_weekly_digest(db: Session, user: User):
+async def send_weekly_digest(db: AsyncSession, user: User):
     """Generate and send a weekly financial digest email to the user."""
     if not settings.RESEND_API_KEY:
         print("Resend API key not configured")
@@ -13,7 +14,8 @@ def send_weekly_digest(db: Session, user: User):
     resend.api_key = settings.RESEND_API_KEY
 
     try:
-        summary = dashboard_service.get_summary(db, user.id)
+        summary_obj = await dashboard_service.get_dashboard_summary(db, user.id)
+        summary = summary_obj.model_dump()
         
         # Build HTML content
         html_content = f"""
@@ -46,12 +48,12 @@ def send_weekly_digest(db: Session, user: User):
         </html>
         """
 
-        params = {{
+        params = {
             "from": "AI CFO <onboarding@resend.dev>",
             "to": [user.email],
             "subject": "Your Weekly Financial Performance",
             "html": html_content,
-        }}
+        }
 
         resend.Emails.send(params)
         return True
@@ -59,11 +61,14 @@ def send_weekly_digest(db: Session, user: User):
         print(f"Error sending email: {e}")
         return False
 
-def trigger_all_weekly_digests(db: Session):
+
+async def trigger_all_weekly_digests(db: AsyncSession):
     """Trigger emails for all users who have notifications enabled."""
-    users = db.query(User).filter(User.email_notifications == True).all()
+    stmt = select(User).where(User.email_notifications == True)
+    result = await db.execute(stmt)
+    users = result.scalars().all()
     count = 0
     for user in users:
-        if send_weekly_digest(db, user):
+        if await send_weekly_digest(db, user):
             count += 1
     return count
