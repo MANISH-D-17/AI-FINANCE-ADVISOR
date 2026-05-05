@@ -9,7 +9,10 @@ import {
   HiOutlineSearch,
   HiOutlineChartBar
 } from 'react-icons/hi';
+import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
+import { FadeIn } from '../components/ui/AnimatedContainer';
+import LogoIcon from '../components/ui/LogoIcon';
 
 const ChatPage = () => {
   const [messages, setMessages] = useState([]);
@@ -24,7 +27,7 @@ const ChatPage = () => {
       if (res.data.length > 0) {
         setMessages(res.data);
       } else {
-        setMessages([{ role: 'assistant', content: "Hello! I'm your Elite AI CFO. I've analyzed your multi-account portfolio. How can I assist with your financial strategy today?" }]);
+        setMessages([{ role: 'assistant', content: "Welcome to Finance Intelligence. I've initialized your portfolio context. How shall we direct your capital today?" }]);
       }
     } catch (err) {
       console.error('Failed to fetch history');
@@ -53,12 +56,11 @@ const ChatPage = () => {
     setInput('');
     setLoading(true);
     
-    // Simulate agentic reasoning steps
     const steps = [
-      { label: "Querying Multi-Account Portfolio", icon: <HiOutlineDatabase /> },
-      { label: "Analyzing Transaction Patterns", icon: <HiOutlineSearch /> },
-      { label: "Cross-referencing Budgets & Forecasts", icon: <HiOutlineChartBar /> },
-      { label: "Finalizing Financial Advice", icon: <HiOutlineSparkles /> }
+      { label: "Querying Portfolio Architecture", icon: <HiOutlineDatabase /> },
+      { label: "Analyzing Capital Velocity", icon: <HiOutlineSearch /> },
+      { label: "Syncing Operational Thresholds", icon: <HiOutlineChartBar /> },
+      { label: "Generating Strategic Directives", icon: <HiOutlineSparkles /> }
     ];
 
     let currentStep = 0;
@@ -72,107 +74,126 @@ const ChatPage = () => {
       const response = await apiClient.post('/chat', {
         messages: [{ role: 'user', content: input }] 
       });
-      // Small delay to let the reasoning feel real
       setTimeout(() => {
         setMessages([...newMessages, { role: 'assistant', content: response.data.reply }]);
         setLoading(false);
         setReasoningStep(null);
       }, 1000);
     } catch (error) {
-      toast.error('AI Strategy engine is refreshing. Please wait.');
+      toast.error('Strategic Engine is recalibrating.');
       setLoading(false);
       setReasoningStep(null);
     } 
   };
 
   return (
-    <div className="max-w-4xl mx-auto h-[calc(100vh-140px)] flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="flex-1 overflow-y-auto px-6 py-10 space-y-8 scrollbar-hide">
-        {messages.map((msg, i) => (
-          <div 
-            key={i} 
-            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-in fade-in slide-in-from-bottom-2 duration-500`}
-          >
-            <div className={`flex gap-4 max-w-[85%] ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-              <div className={`
-                w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0
-                ${msg.role === 'user' 
-                  ? 'premium-gradient text-white shadow-xl shadow-primary/30' 
-                  : 'glass-card !p-0 border-none bg-white text-primary shadow-lg shadow-slate-200/50'}
-              `}>
-                {msg.role === 'user' ? <HiOutlineUser className="w-6 h-6" /> : <HiOutlineSparkles className="w-6 h-6 animate-pulse-soft" />}
+    <div className="max-w-5xl mx-auto h-[calc(100vh-140px)] flex flex-col relative">
+      <div className="flex-1 overflow-y-auto px-8 py-10 space-y-12 scrollbar-hide">
+        <AnimatePresence initial={false}>
+          {messages.map((msg, i) => (
+            <motion.div 
+              key={i}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+            >
+              <div className={`flex gap-6 max-w-[80%] ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+                <div className={`
+                  w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg
+                  ${msg.role === 'user' 
+                    ? 'bg-white text-black border border-black/5' 
+                    : 'bg-black text-white'}
+                `}>
+                  {msg.role === 'user' ? <HiOutlineUser className="w-6 h-6" /> : <LogoIcon className="w-7 h-7" />}
+                </div>
+                <div className={`
+                  px-8 py-6 rounded-[2rem] text-lg leading-relaxed tracking-tight
+                  ${msg.role === 'user' 
+                    ? 'bg-black text-white rounded-tr-none' 
+                    : 'bg-white border border-black/5 text-black rounded-tl-none shadow-sm'}
+                `}>
+                  {msg.content}
+                </div>
               </div>
-              <div className={`
-                px-6 py-5 rounded-3xl shadow-xl text-base leading-relaxed
-                ${msg.role === 'user' 
-                  ? 'bg-navy-dark text-white rounded-tr-none shadow-navy/20' 
-                  : 'glass-card border-none text-navy-dark rounded-tl-none'}
-              `}>
-                {msg.content}
-              </div>
-            </div>
-          </div>
-        ))}
+            </motion.div>
+          ))}
+        </AnimatePresence>
 
         {loading && (
-          <div className="flex justify-start">
-            <div className="flex gap-4 max-w-[85%] items-start">
-              <div className="w-12 h-12 rounded-2xl glass-card !p-0 flex items-center justify-center animate-pulse">
-                <HiOutlineSparkles className="w-6 h-6 text-primary" />
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex justify-start"
+          >
+            <div className="flex gap-6 max-w-[80%] items-start">
+              <div className="w-12 h-12 rounded-full bg-black text-white flex items-center justify-center shadow-lg">
+                <LogoIcon className="w-7 h-7 animate-pulse" />
               </div>
-              <div className="glass-card border-none px-6 py-5 rounded-3xl rounded-tl-none space-y-4 min-w-[280px]">
-                <div className="flex gap-1.5">
-                  <span className="w-2 h-2 bg-primary/40 rounded-full animate-bounce"></span>
-                  <span className="w-2 h-2 bg-primary/40 rounded-full animate-bounce delay-150"></span>
-                  <span className="w-2 h-2 bg-primary/40 rounded-full animate-bounce delay-300"></span>
+              <div className="bg-white border border-black/5 px-10 py-8 rounded-[2rem] rounded-tl-none space-y-8 min-w-[360px] shadow-sm">
+                <div className="flex gap-2">
+                  <span className="w-2 h-2 bg-black rounded-full animate-bounce"></span>
+                  <span className="w-2 h-2 bg-black/60 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                  <span className="w-2 h-2 bg-black/30 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
                 </div>
-                {reasoningStep && (
-                  <div className="flex items-center gap-2.5 text-xs font-bold text-slate-400 uppercase tracking-widest animate-in fade-in slide-in-from-left-2 duration-300">
-                    <span className="text-primary text-base">{reasoningStep.icon}</span>
-                    {reasoningStep.label}
-                  </div>
-                )}
+                <AnimatePresence mode="wait">
+                  {reasoningStep && (
+                    <motion.div 
+                      key={reasoningStep.label}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 10 }}
+                      transition={{ duration: 0.3 }}
+                      className="flex items-center gap-4 text-[10px] font-black text-black/30 uppercase tracking-[0.3em]"
+                    >
+                      <span className="text-black text-xl">{reasoningStep.icon}</span>
+                      {reasoningStep.label}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
-          </div>
+          </motion.div>
         )}
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="mt-auto px-6 pb-6 pt-2">
-        <div className="glass-card !p-2 flex flex-col gap-2 shadow-2xl shadow-navy/10 relative">
+      <FadeIn direction="up" distance={20} className="mt-auto px-8 pb-8 pt-4">
+        <div className="bg-white border border-black/5 rounded-[2.5rem] p-3 shadow-[0_20px_50px_rgba(0,0,0,0.05)]">
           <form 
             onSubmit={handleSend}
-            className="flex items-center gap-3 p-1"
+            className="flex items-center gap-4 p-1"
           >
             <input
               type="text"
-              className="flex-1 bg-transparent border-none outline-none px-4 py-3 text-navy-dark placeholder-slate-400 font-medium"
-              placeholder="Query your financial strategy engine..."
+              className="flex-1 bg-transparent border-none outline-none px-6 py-4 text-black placeholder-black/20 font-medium text-lg"
+              placeholder="Query the Architecture..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
             />
-            <button
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               type="submit"
               disabled={!input.trim() || loading}
-              className="w-12 h-12 premium-gradient text-white rounded-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-xl shadow-primary/30 disabled:opacity-20 disabled:scale-100"
+              className="w-16 h-16 bg-black text-white rounded-full flex items-center justify-center shadow-2xl shadow-black/20 disabled:opacity-20 transition-all"
             >
-              <HiOutlinePaperAirplane className="w-6 h-6 rotate-90" />
-            </button>
+              <HiOutlinePaperAirplane className="w-7 h-7 rotate-90" />
+            </motion.button>
           </form>
           
-          <div className="flex items-center gap-6 px-4 py-2 border-t border-slate-100">
-             <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                <HiOutlineChatAlt2 className="w-4 h-4 text-primary" />
-                Live Contextual Agent
+          <div className="flex items-center gap-6 px-7 py-4 border-t border-black/[0.03]">
+             <div className="flex items-center gap-3 text-[10px] font-black text-black/30 uppercase tracking-[0.2em]">
+                <HiOutlineChatAlt2 className="w-5 h-5 text-black" />
+                Contextual Intelligence Active
              </div>
-             <div className="flex-1 h-px bg-slate-50"></div>
-             <p className="text-[10px] text-slate-300 font-medium uppercase tracking-widest">
-               Portoflio Snapshot: 2026/04/20
+             <div className="flex-1 h-px bg-black/[0.02]"></div>
+             <p className="text-[10px] text-black/20 font-black uppercase tracking-[0.3em]">
+               Finance Intelligence v1.0
              </p>
           </div>
         </div>
-      </div>
+      </FadeIn>
     </div>
   );
 };

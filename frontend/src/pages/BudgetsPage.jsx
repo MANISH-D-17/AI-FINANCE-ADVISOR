@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import apiClient from '../api/client';
 import toast from 'react-hot-toast';
-import { HiOutlineSave, HiOutlineTrash } from 'react-icons/hi';
+import { HiOutlineSave, HiOutlineTrash, HiOutlineLightBulb } from 'react-icons/hi';
+import { motion } from 'framer-motion';
+import { FadeIn, StaggerContainer, StaggerItem } from '../components/ui/AnimatedContainer';
 
 const CATEGORIES = ["Food", "Travel", "Shopping", "Bills", "Entertainment", "Health", "Other"];
 
@@ -44,9 +46,9 @@ const BudgetsPage = () => {
         category,
         monthly_limit: parseFloat(limit)
       });
-      toast.success(`${category} budget updated!`);
+      toast.success(`${category} threshold updated`);
     } catch (error) {
-      toast.error('Failed to update budget');
+      toast.error('Threshold update failed');
     } finally {
       setSaving(false);
     }
@@ -60,93 +62,109 @@ const BudgetsPage = () => {
         delete next[category];
         return next;
       });
-      toast.success(`${category} budget removed`);
+      toast.success(`${category} threshold removed`);
     } catch (error) {
-      toast.error('Failed to remove budget');
+      toast.error('Removal failed');
     }
   };
 
   if (loading) {
     return (
-      <div className="flex justify-center py-20">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      <div className="flex justify-center py-32">
+        <div className="w-12 h-12 border-4 border-black/5 border-t-black rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold text-navy-dark">Budget Management</h1>
-        <p className="text-gray-500">Set and manage your monthly spending limits for each category</p>
-      </div>
+    <div className="space-y-16 pb-24">
+      <FadeIn direction="down" distance={20}>
+        <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-12 mb-20">
+          <div>
+            <h1 className="text-7xl md:text-9xl font-medium text-black tracking-halo leading-[0.85] mb-8">
+              Operational<br/>Thresholds
+            </h1>
+            <p className="text-black/50 mt-4 text-lg font-medium tracking-tight max-w-lg leading-relaxed">
+              Define algorithmic constraints and systemic expenditure guardrails to maintain portfolio integrity.
+            </p>
+          </div>
+        </div>
+      </FadeIn>
 
-      <div className="grid gap-4">
+      <StaggerContainer className="grid gap-6">
         {CATEGORIES.map((cat) => (
-          <div key={cat} className="card flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-center gap-4 min-w-[150px]">
-              <div className={`w-3 h-10 rounded-full ${getCategoryBarColor(cat)}`}></div>
-              <div>
-                <h3 className="font-bold text-navy-dark">{cat}</h3>
-                <p className="text-xs text-gray-400">Monthly Target</p>
+          <StaggerItem key={cat}>
+            <div className="glass-card flex flex-col md:flex-row md:items-center justify-between gap-8 group hover:border-black/20 transition-all duration-400 !p-8">
+              <div className="flex items-center gap-8 min-w-[240px]">
+                <div className="w-1.5 h-12 rounded-full bg-black shadow-[0_0_15px_rgba(0,0,0,0.1)]"></div>
+                <div>
+                  <h3 className="text-xl font-medium text-black tracking-tight">{cat}</h3>
+                  <p className="text-[10px] font-black text-black/20 uppercase tracking-[0.3em] mt-1.5">Asset Limit</p>
+                </div>
+              </div>
+
+              <div className="flex-1 flex items-center gap-4 relative">
+                <span className="absolute left-6 text-black/20 font-black text-lg pointer-events-none">₹</span>
+                <input
+                  type="number"
+                  placeholder="0.00"
+                  className="input-field flex-1 max-w-[280px] pl-12 h-14 text-xl font-medium text-black !bg-transparent border-black/5 focus:border-black/20 transition-all"
+                  value={budgets[cat] || ''}
+                  onChange={(e) => handleUpdate(cat, e.target.value)}
+                />
+              </div>
+
+              <div className="flex gap-4">
+                <button
+                  onClick={() => handleSave(cat)}
+                  disabled={saving}
+                  className="bg-black text-white px-10 py-3.5 rounded-full text-[11px] font-black uppercase tracking-[0.2em] hover:bg-gray-800 transition-all shadow-xl shadow-black/10 flex items-center gap-3 disabled:opacity-50"
+                >
+                  <HiOutlineSave className="w-4 h-4" />
+                  Sync Threshold
+                </button>
+                {budgets[cat] !== undefined && (
+                  <button
+                    onClick={() => handleDelete(cat)}
+                    className="p-3.5 text-black/20 hover:text-rose-500 hover:bg-rose-50 transition-all rounded-full border border-black/5"
+                  >
+                    <HiOutlineTrash className="w-5 h-5" />
+                  </button>
+                )}
               </div>
             </div>
-
-            <div className="flex-1 flex items-center gap-3">
-              <span className="text-gray-400 font-medium">₹</span>
-              <input
-                type="number"
-                placeholder="Set limit"
-                className="input-field flex-1 max-w-[200px]"
-                value={budgets[cat] || ''}
-                onChange={(e) => handleUpdate(cat, e.target.value)}
-              />
-            </div>
-
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleSave(cat)}
-                disabled={saving}
-                className="btn-primary py-2 px-4 flex items-center gap-2"
-              >
-                <HiOutlineSave className="w-5 h-5" />
-                Save
-              </button>
-              {budgets[cat] !== undefined && (
-                <button
-                  onClick={() => handleDelete(cat)}
-                  className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all rounded-lg"
-                >
-                  <HiOutlineTrash className="w-6 h-6" />
-                </button>
-              )}
-            </div>
-          </div>
+          </StaggerItem>
         ))}
-      </div>
+      </StaggerContainer>
 
-      <div className="bg-primary/5 rounded-2xl p-6 border border-primary/10">
-        <h4 className="text-primary font-bold mb-2">💡 Tips for better budgeting</h4>
-        <ul className="text-sm text-navy-dark/70 space-y-2 list-disc list-inside">
-          <li>Start with "Bills" and "Other" essentials first.</li>
-          <li>Set realistic limits based on your past 3 months' data.</li>
-          <li>Your AI advisor will alert you when you reach 80% of any limit.</li>
-        </ul>
-      </div>
+      <FadeIn direction="up" className="glass-card !p-12 border-dashed border-black/10 bg-black/[0.01]">
+        <div className="flex items-center gap-6 mb-10">
+          <div className="w-14 h-14 bg-black rounded-full flex items-center justify-center text-white shadow-xl shadow-black/10">
+            <HiOutlineLightBulb className="w-8 h-8" />
+          </div>
+          <h4 className="text-2xl font-medium text-black tracking-tight">Optimization Protocols</h4>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+          <div className="space-y-3">
+            <p className="text-sm font-semibold text-black uppercase tracking-tight">Priority Sequencing</p>
+            <p className="text-sm text-black/50 font-medium leading-relaxed">Systematically define essential parameters first to establish a resilient operational baseline.</p>
+          </div>
+          <div className="space-y-3">
+            <p className="text-sm font-semibold text-black uppercase tracking-tight">Data-Driven Thresholds</p>
+            <p className="text-sm text-black/50 font-medium leading-relaxed">Establish realistic constraints based on a 90-day moving average of actual expenditure datasets.</p>
+          </div>
+          <div className="space-y-3">
+            <p className="text-sm font-semibold text-black uppercase tracking-tight">Predictive Alerting</p>
+            <p className="text-sm text-black/50 font-medium leading-relaxed">The AI Agent initiates critical directives when any category threshold hits the 80% depletion mark.</p>
+          </div>
+          <div className="space-y-3">
+            <p className="text-sm font-semibold text-black uppercase tracking-tight">Dynamic Scaling</p>
+            <p className="text-sm text-black/50 font-medium leading-relaxed">Parameter limits are recalibrated cycles based on evolving portfolio health metrics.</p>
+          </div>
+        </div>
+      </FadeIn>
     </div>
   );
-};
-
-const getCategoryBarColor = (category) => {
-  switch (category) {
-    case 'Food': return 'bg-orange-500';
-    case 'Travel': return 'bg-blue-500';
-    case 'Shopping': return 'bg-purple-500';
-    case 'Bills': return 'bg-red-500';
-    case 'Entertainment': return 'bg-pink-500';
-    case 'Health': return 'bg-teal-500';
-    default: return 'bg-gray-500';
-  }
 };
 
 export default BudgetsPage;

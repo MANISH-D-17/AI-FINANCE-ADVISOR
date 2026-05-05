@@ -2,8 +2,6 @@ import React from 'react';
 import { 
   AreaChart, 
   Area, 
-  XAxis, 
-  YAxis, 
   Tooltip, 
   ResponsiveContainer 
 } from 'recharts';
@@ -11,8 +9,8 @@ import { HiOutlineShieldCheck, HiOutlineTrendingDown, HiOutlineTrendingUp } from
 
 const NetWorthWidget = ({ summary, trends, loading }) => {
   if (loading) return (
-    <div className="glass-card animate-pulse h-48 flex items-center justify-center">
-      <div className="h-4 w-24 bg-slate-200 rounded-full"></div>
+    <div className="glass-card h-48 flex items-center justify-center overflow-hidden">
+      <div className="w-full h-full shimmer bg-black/[0.02]"></div>
     </div>
   );
 
@@ -31,63 +29,70 @@ const NetWorthWidget = ({ summary, trends, loading }) => {
     : 'Calculating...';
 
   return (
-    <div className="glass-card bento-item-large overflow-hidden group">
-      <div className="flex flex-col md:flex-row justify-between gap-6 relative z-10">
-        <div className="space-y-4">
-          <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-widest">
-            <HiOutlineShieldCheck className="w-4 h-4" />
-            Consolidated Net Worth
+    <div className="glass-card !p-10 overflow-hidden group relative">
+      <div className="flex flex-col md:flex-row justify-between gap-10 relative z-10">
+        <div className="space-y-6">
+          <div className="flex items-center gap-3 text-black font-black text-[10px] uppercase tracking-[0.3em]">
+            <HiOutlineShieldCheck className="w-5 h-5 text-black/20" />
+            Consolidated Equity
           </div>
           <div>
-            <h2 className="text-4xl font-extrabold text-navy-dark tracking-tight">
+            <h2 className="text-5xl font-medium text-black tracking-halo leading-none">
               ₹{Number(netWorth).toLocaleString()}
             </h2>
-            <div className={`flex items-center gap-1 mt-2 text-sm font-bold ${Number(percentChange) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-              {Number(percentChange) >= 0 ? <HiOutlineTrendingUp /> : <HiOutlineTrendingDown />}
-              {Math.abs(percentChange)}% this month
+            <div className={`flex items-center gap-2 mt-4 text-[11px] font-black uppercase tracking-widest ${Number(percentChange) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+              {Number(percentChange) >= 0 ? <HiOutlineTrendingUp className="w-4 h-4" /> : <HiOutlineTrendingDown className="w-4 h-4" />}
+              {Math.abs(percentChange)}% Dynamic Shift
             </div>
           </div>
           
-          <div className="flex gap-6 pt-2">
+          <div className="flex flex-wrap gap-8 pt-4">
             <div>
-              <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Total Assets</p>
-              <p className="text-sm font-bold text-navy-light mt-0.5">₹{Number(assets).toLocaleString()}</p>
+              <p className="text-[10px] uppercase font-black text-black/30 tracking-[0.2em] mb-2">Total Assets</p>
+              <p className="text-lg font-medium text-black tracking-tight">₹{Number(assets).toLocaleString()}</p>
             </div>
-            <div className="h-8 w-px bg-slate-200"></div>
+            <div className="w-px h-10 bg-black/[0.05] hidden sm:block"></div>
             <div>
-              <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Liabilities</p>
-              <p className="text-sm font-bold text-rose-500 mt-0.5">₹{Number(liabilities).toLocaleString()}</p>
+              <p className="text-[10px] uppercase font-black text-black/30 tracking-[0.2em] mb-2">Liabilities</p>
+              <p className="text-lg font-medium text-black tracking-tight">₹{Number(liabilities).toLocaleString()}</p>
             </div>
-            <div className="h-8 w-px bg-slate-200"></div>
+            <div className="w-px h-10 bg-black/[0.05] hidden sm:block"></div>
             <div>
-              <p className="text-[10px] uppercase font-bold text-amber-500 tracking-wider">Runway</p>
-              <p className="text-sm font-bold text-navy-light mt-0.5">
+              <p className="text-[10px] uppercase font-black text-black/30 tracking-[0.2em] mb-2">Resilience Runway</p>
+              <p className="text-lg font-medium text-black tracking-tight">
                 {runwayLabel}
               </p>
             </div>
           </div>
         </div>
 
-        <div className="h-32 w-full md:w-64 -mb-6 md:-mr-6 opacity-80 group-hover:opacity-100 transition-opacity">
+        <div className="h-40 w-full md:w-80 -mr-6 opacity-60 group-hover:opacity-100 transition-opacity duration-700">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={trends}>
               <defs>
-                <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                <linearGradient id="colorValueNW" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#000000" stopOpacity={0.05}/>
+                  <stop offset="95%" stopColor="#000000" stopOpacity={0}/>
                 </linearGradient>
               </defs>
               <Tooltip 
-                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                labelStyle={{ fontSize: '10px', color: '#64748b' }}
+                contentStyle={{ 
+                  backgroundColor: '#fff', 
+                  borderRadius: '24px', 
+                  border: '1px solid rgba(0,0,0,0.05)', 
+                  boxShadow: '0 20px 40px rgba(0,0,0,0.05)',
+                  padding: '16px 20px'
+                }}
+                itemStyle={{ color: '#000', fontWeight: 600, fontSize: '14px' }}
+                labelStyle={{ color: 'rgba(0,0,0,0.3)', fontWeight: 800, fontSize: '10px', textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '0.1em' }}
               />
               <Area 
                 type="monotone" 
                 dataKey="value" 
-                stroke="#6366f1" 
-                strokeWidth={3}
+                stroke="#000" 
+                strokeWidth={2}
                 fillOpacity={1} 
-                fill="url(#colorValue)" 
+                fill="url(#colorValueNW)" 
               />
             </AreaChart>
           </ResponsiveContainer>
@@ -95,7 +100,7 @@ const NetWorthWidget = ({ summary, trends, loading }) => {
       </div>
       
       {/* Abstract Background Element */}
-      <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-primary/5 rounded-full blur-3xl"></div>
+      <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-black/[0.02] rounded-full blur-[100px] group-hover:scale-125 transition-transform duration-1000"></div>
     </div>
   );
 };

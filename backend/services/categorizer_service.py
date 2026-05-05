@@ -17,8 +17,11 @@ import os
 import pickle
 import asyncio
 import numpy as np
+import logging
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
+
+logger = logging.getLogger(__name__)
 
 # ─── Paths ────────────────────────────────────────────────────────────────────
 ML_MODELS_DIR = Path(__file__).parent.parent / "ml" / "models"
@@ -82,7 +85,7 @@ def load_categorizer():
                     _legacy_model = bundle
                     return _legacy_model
             except Exception as e:
-                print(f"⚠️  Failed to load v3 model: {e}")
+                logger.warning(f"Failed to load v3 model: {e}")
         else:
             return _model_bundle
 
@@ -93,7 +96,7 @@ def load_categorizer():
                 with open(MODEL_LEGACY_PATH, "rb") as f:
                     _legacy_model = pickle.load(f)
             except Exception as e:
-                print(f"⚠️  Failed to load legacy model: {e}")
+                logger.warning(f"Failed to load legacy model: {e}")
         return _legacy_model
 
     return None

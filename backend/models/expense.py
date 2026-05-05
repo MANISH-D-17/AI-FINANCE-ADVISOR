@@ -10,12 +10,12 @@ class Expense(Base):
     __tablename__ = "expenses"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     account_id = Column(Integer, ForeignKey("bank_accounts.id"), nullable=True)
     amount = Column(Numeric(10, 2), nullable=False)
-    category = Column(String, nullable=False)
+    category = Column(String, nullable=False, index=True)
     description = Column(String, nullable=True)
-    date = Column(Date, nullable=False)
+    date = Column(Date, nullable=False, index=True)
     reference_number = Column(String(100), nullable=True, index=True)
     is_anomaly = Column(Boolean, default=False)
     anomaly_score = Column(Float, default=0.0)

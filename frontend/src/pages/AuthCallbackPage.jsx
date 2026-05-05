@@ -1,17 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import LogoIcon from '../components/ui/LogoIcon';
 
 /**
  * AuthCallbackPage — handles redirect from Google OAuth server-side flow.
- * Route: /auth/callback?token=...&is_new=true|false
- *
- * Reads JWT from URL query param, stores it via AuthContext,
- * then redirects user to dashboard.
  */
 const AuthCallbackPage = () => {
   const [searchParams] = useSearchParams();
-  const [status, setStatus] = useState('Processing...');
+  const [status, setStatus] = useState('Authenticating Profile...');
   const { loginWithGoogle } = useAuth();
   const navigate = useNavigate();
 
@@ -20,46 +17,31 @@ const AuthCallbackPage = () => {
     const isNew = searchParams.get('is_new') === 'true';
 
     if (!token) {
-      setStatus('Authentication failed — no token received.');
+      setStatus('Authentication protocol failed.');
       setTimeout(() => navigate('/login'), 3000);
       return;
     }
 
-    // Store token and update auth context
     loginWithGoogle(token)
       .then(() => {
-        if (isNew) {
-          navigate('/', { replace: true }); // TODO: redirect to /onboarding when that page exists
-        } else {
-          navigate('/', { replace: true });
-        }
+        navigate('/dashboard', { replace: true });
       })
       .catch(() => {
-        setStatus('Failed to complete sign-in. Redirecting to login...');
+        setStatus('Failed to initiate session. Redirecting...');
         setTimeout(() => navigate('/login'), 2000);
       });
   }, []);
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      background: '#0f1724',
-      color: '#e2e8f0',
-      fontFamily: 'Inter, sans-serif',
-      gap: '16px',
-    }}>
-      <div style={{
-        width: '40px', height: '40px', borderRadius: '50%',
-        border: '3px solid rgba(59,130,246,0.3)',
-        borderTop: '3px solid #3b82f6',
-        animation: 'spin 1s linear infinite',
-      }} />
-      <p style={{ margin: 0, color: '#94a3b8', fontSize: '14px' }}>{status}</p>
-      <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+    <div className="min-h-screen bg-[#F5F5F5] flex flex-col items-center justify-center gap-8">
+      <div className="relative">
+        <LogoIcon className="w-12 h-12 text-black/10" />
+        <div className="absolute inset-0 border-2 border-transparent border-t-black rounded-full animate-spin"></div>
+      </div>
+      <div className="text-center space-y-2">
+        <p className="text-[11px] font-black text-black uppercase tracking-[0.3em]">{status}</p>
+        <p className="text-[9px] font-medium text-black/30 uppercase tracking-widest">Protocol.Authorization_Active</p>
+      </div>
     </div>
   );
 };

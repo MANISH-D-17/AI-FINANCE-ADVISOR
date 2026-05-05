@@ -6,7 +6,7 @@ class BankAccount(Base):
     __tablename__ = "bank_accounts"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False, index=True)
     account_name = Column(String(100), nullable=False)       # "HDFC Savings", "SBI Salary"
     bank_name = Column(String(50), nullable=False)           # "HDFC", "SBI", "Axis", etc.
     account_number_last4 = Column(String(4), nullable=True) # last 4 digits only
@@ -25,7 +25,7 @@ class AccountStatement(Base):
     __tablename__ = "account_statements"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False, index=True)
     account_id = Column(Integer, ForeignKey("bank_accounts.id"), nullable=False)
     filename = Column(String(255), nullable=False)
     file_hash = Column(String(64), nullable=False, unique=True) # SHA-256 of file to prevent re-import

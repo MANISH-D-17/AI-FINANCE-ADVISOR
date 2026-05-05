@@ -1,6 +1,7 @@
 import asyncio
 import traceback
 import os
+import logging
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -18,6 +19,8 @@ from services.migration_service import run_alembic_migrations
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from config import settings
 
+logger = logging.getLogger(__name__)
+
 # ─── Rate Limiter ─────────────────────────────────────────────────────────────
 try:
     from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -29,7 +32,7 @@ except ImportError:
     # slowapi not installed — rate limiting disabled gracefully
     limiter = None
     RATE_LIMITING_ENABLED = False
-    print("⚠️  slowapi not installed. Rate limiting is disabled. Run: pip install slowapi")
+    logger.warning("slowapi not installed. Rate limiting is disabled. Run: pip install slowapi")
 
 # ─── Scheduler ────────────────────────────────────────────────────────────────
 scheduler = AsyncIOScheduler()
@@ -40,7 +43,7 @@ async def nightly_retrain_task():
         try:
             await retrain_model(db)
         except Exception as e:
-            print(f"Nightly retrain failed: {e}")
+            logger.error(f"Nightly retrain failed: {e}")
 
 
 async def weekly_email_task():
@@ -48,7 +51,7 @@ async def weekly_email_task():
         try:
             await trigger_all_weekly_digests(db)
         except Exception as e:
-            print(f"Weekly email task failed: {e}")
+            logger.error(f"Weekly email task failed: {e}")
 
 
 # Retrain at midnight every day
@@ -72,7 +75,7 @@ if RATE_LIMITING_ENABLED:
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     """Catch-all: log full traceback, return generic 500 (never expose internals)."""
-    print(f"UNHANDLED ERROR on {request.method} {request.url}:\n{traceback.format_exc()}")
+    logger.error(f"UNHANDLED ERROR on {request.method} {request.url}:\n{traceback.format_exc()}")
     return JSONResponse(
         status_code=500,
         content={"detail": "An internal error occurred. Please try again later."},
@@ -94,7 +97,7 @@ async def background_startup():
         try:
             await evaluate_and_store_metrics(db)
         except Exception as e:
-            print(f"Initial metrics evaluation failed: {e}")
+            logger.error(f"Initial metrics evaluation failed: {e}")
 
 
 @app.on_event("startup")
@@ -116,7 +119,7 @@ async def startup_event():
                     await conn.execute(text(sql))
                 except Exception:
                     pass  # Column already exists — safe to ignore
-        print("✅ SQLite Fallback Initialized: finance.db")
+        logger.info("SQLite Fallback Initialized: finance.db")
 
 
     scheduler.start()

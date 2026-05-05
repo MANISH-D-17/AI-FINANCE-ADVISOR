@@ -174,6 +174,26 @@ async def confirm_import(
         internal_seen = set()
         categories_requiring_review = 0
 
+        # Pre-fetch anomaly detection history once for the whole batch (huge perf boost)
+        from services.anomaly_detector import detect_anomaly
+        import pandas as pd
+        from models.expense import CATEGORIES
+        
+        stmt_hist = select(Expense).where(
+            Expense.user_id == current_user.id,
+            Expense.transaction_type.in_(('debit', 'expense'))
+        ).order_by(Expense.date.desc()).limit(150)
+        res_hist = await db.execute(stmt_hist)
+        hist_rows = res_hist.scalars().all()
+        
+        hist_df = None
+        if len(hist_rows) >= 15:
+            hist_df = pd.DataFrame([{
+                'amount': float(e.amount),
+                'category_idx': CATEGORIES.index(e.category) if e.category in CATEGORIES else len(CATEGORIES),
+                'day_of_week': e.date.weekday()
+            } for e in hist_rows])
+
         for tx in data.transactions:
             if tx.reference_number and (
                 tx.reference_number in internal_seen or tx.reference_number in existing_refs
@@ -190,8 +210,19 @@ async def confirm_import(
             if tx.requires_review:
                 categories_requiring_review += 1
 
-            # Basic anomaly detection: flag transactions > ₹1,00,000
-            is_anomaly = float(tx.amount) > 100000
+            # Professional Anomaly Detection
+            is_anomaly = False
+            anomaly_score = 0.0
+            explanation = ""
+            
+            if tx.type == "debit" and hist_df is not None:
+                is_anomaly, anomaly_score, explanation = await detect_anomaly(
+                    db, current_user.id, float(tx.amount), category, str(tx.date), history_df=hist_df
+                )
+            elif tx.type == "debit" and float(tx.amount) > 100000:
+                is_anomaly = True
+                anomaly_score = 0.95
+                explanation = "Large transaction flagged (insufficient history for ML analysis)"
 
             new_expense = Expense(
                 user_id=current_user.id,
@@ -203,7 +234,8 @@ async def confirm_import(
                 reference_number=tx.reference_number,
                 account_id=tx.account_id,
                 is_anomaly=is_anomaly,
-                anomaly_score=0.9 if is_anomaly else 0.1,
+                anomaly_score=float(anomaly_score),
+                anomaly_explanation=explanation
             )
             to_create.append(new_expense)
 

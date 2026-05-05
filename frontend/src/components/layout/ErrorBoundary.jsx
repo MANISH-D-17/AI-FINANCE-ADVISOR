@@ -1,4 +1,5 @@
 import React from 'react';
+import LogoIcon from '../ui/LogoIcon';
 
 /**
  * ErrorBoundary — catches unhandled React render errors.
@@ -15,49 +16,37 @@ class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, info) {
-    // Log to console in dev; in production, send to error tracking service
     console.error('[ErrorBoundary] Uncaught error:', error, info);
   }
 
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{
-          minHeight: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: '#0f1724',
-          color: '#e2e8f0',
-          fontFamily: 'Inter, sans-serif',
-          gap: '16px',
-          padding: '40px',
-          textAlign: 'center',
-        }}>
-          <div style={{ fontSize: '48px' }}>⚠️</div>
-          <h2 style={{ margin: 0, fontSize: '20px', color: '#f1f5f9' }}>
-            Something went wrong
+        <div className="min-h-screen bg-[#F5F5F5] flex flex-col items-center justify-center p-8 text-center">
+          <div className="mb-12 text-black">
+            <LogoIcon className="w-16 h-16 mx-auto" />
+          </div>
+          
+          <h2 className="text-4xl font-medium text-black tracking-halo mb-4">
+            Systemic Interruption
           </h2>
-          <p style={{ margin: 0, color: '#94a3b8', maxWidth: '400px', fontSize: '14px' }}>
-            An unexpected error occurred. Your data is safe. Please try reloading the page.
+          
+          <p className="text-black/40 font-medium max-w-md mx-auto mb-12 leading-relaxed">
+            An unexpected architectural variance has occurred. Your financial data remains secure. Initialize a terminal reset to continue.
           </p>
+          
           <button
             onClick={() => window.location.reload()}
-            style={{
-              marginTop: '8px',
-              padding: '10px 24px',
-              background: '#3b82f6',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '600',
-            }}
+            className="bg-black text-white px-10 py-4 rounded-full text-[11px] font-black uppercase tracking-[0.3em] hover:bg-black/80 transition-all shadow-xl shadow-black/10"
           >
-            Reload App
+            Reset Architecture
           </button>
+          
+          <div className="mt-20 border-t border-black/5 pt-8 w-full max-w-xs">
+            <p className="text-[9px] font-black text-black/20 uppercase tracking-widest">
+              Error Code: {this.state.error?.name || 'Protocol.Variance'}
+            </p>
+          </div>
         </div>
       );
     }

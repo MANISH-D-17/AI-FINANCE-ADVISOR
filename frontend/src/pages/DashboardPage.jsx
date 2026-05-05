@@ -1,22 +1,22 @@
 import React, { useState } from 'react';
 import apiClient from '../api/client';
 import toast from 'react-hot-toast';
+import { Link } from 'react-router-dom';
 import StatementImportModal from '../components/expenses/StatementImportModal';
 import CategoryPieChart from '../components/charts/CategoryPieChart';
 import NetWorthWidget from '../components/dashboard/NetWorthWidget';
 import AnomalyAlarmCenter from '../components/dashboard/AnomalyAlarmCenter';
 import TaxStrategyWidget from '../components/dashboard/TaxStrategyWidget';
 import { useDashboard, useNetWorth } from '../hooks/useFinance';
+import { StaggerContainer, StaggerItem, FadeIn } from '../components/ui/AnimatedContainer';
+import { motion } from 'framer-motion';
 import { 
-  HiOutlineEmojiHappy, 
-  HiOutlineUpload, 
   HiOutlineDocumentDownload,
+  HiOutlineRefresh,
   HiOutlineLightBulb,
-  HiOutlineArrowRight,
-  HiOutlineCube,
-  HiOutlineRefresh
 } from 'react-icons/hi';
-const VITE_CACHE_BUST = 'v1.1.1'; // Force HMR refresh for new sync endpoints
+import { ArrowRight } from 'lucide-react';
+import KpiCard from '../components/ui/KpiCard';
 
 const DashboardPage = () => {
   const [filters, setFilters] = useState({
@@ -29,7 +29,6 @@ const DashboardPage = () => {
   const [exportLoading, setExportLoading] = useState(false);
   const [simLoading, setSimLoading] = useState(false);
 
-  // Re-fetch everything when filters change or on refresh
   const refreshAll = () => {
     fetchSummary(filters);
     fetchNetWorth();
@@ -43,11 +42,10 @@ const DashboardPage = () => {
     setSimLoading(true);
     try {
       await apiClient.post('/simulator/run');
-      toast.success('Simulation Started: 50 transactions syncing...', { duration: 4000 });
-      // Refresh after a slight delay to show the data appearing
+      toast.success('Synchronization Initiated', { duration: 4000 });
       setTimeout(refreshAll, 3000);
     } catch (error) {
-      toast.error('Sync Simulator is offline.');
+      toast.error('Sync Engine Offline');
     } finally {
       setSimLoading(false);
     }
@@ -63,12 +61,12 @@ const DashboardPage = () => {
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `CFO_Report_${filters.month}_${filters.year}.pdf`);
+      link.setAttribute('download', `Finance_Intelligence_Report_${filters.month}_${filters.year}.pdf`);
       document.body.appendChild(link);
       link.click();
       link.parentNode.removeChild(link);
     } catch (error) {
-      toast.error('Failed to download report');
+      toast.error('Export Failed');
     } finally {
       setExportLoading(false);
     }
@@ -76,200 +74,218 @@ const DashboardPage = () => {
 
   if (dashboardLoading && !summary) {
     return (
-      <div className="flex justify-center items-center h-full py-40">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-pulse">
+        <div className="h-40 bg-white rounded-2xl shimmer"></div>
+        <div className="h-40 bg-white rounded-2xl shimmer"></div>
+        <div className="h-40 bg-white rounded-2xl shimmer"></div>
+        <div className="lg:col-span-3 h-[500px] bg-white rounded-2xl shimmer"></div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+    <div className="space-y-12 pb-20">
       {/* Premium Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-        <div>
-          <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-[0.2em] mb-2">
-            <HiOutlineCube className="w-4 h-4" />
-            Intelligence Terminal
+      <FadeIn direction="down" distance={15}>
+        <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-12 mb-20">
+          <div>
+            <h1 className="text-7xl md:text-9xl font-medium text-black tracking-halo leading-[0.85] mb-8">
+              Wealth<br/>Architecture
+            </h1>
+            <p className="text-black/50 mt-4 text-lg font-medium tracking-tight max-w-lg leading-relaxed">
+              Consolidated intelligence dashboard for multi-horizon capital monitoring and strategic deployment.
+            </p>
           </div>
-          <h1 className="text-4xl font-extrabold text-navy-dark tracking-tight">
-            Finance <span className="text-gradient">Intelligence</span>
-          </h1>
 
-          <div className="flex items-center gap-3 mt-3">
-            <div className="bg-white/50 backdrop-blur-sm border border-slate-200 px-3 py-1 rounded-lg flex items-center gap-2 shadow-sm">
+          <div className="flex flex-wrap items-center gap-4">
+            <button 
+              onClick={handleSyncSimulation}
+              disabled={simLoading}
+              className="bg-white border border-black/5 text-black px-10 py-4 rounded-full text-[11px] font-black uppercase tracking-[0.2em] hover:bg-black hover:text-white transition-all shadow-xl shadow-black/5 flex items-center gap-3"
+            >
+              <HiOutlineRefresh className={`w-4 h-4 ${simLoading ? 'animate-spin' : ''}`} />
+              Sync Assets
+            </button>
+            
+            <button 
+              onClick={handleExportPDF}
+              disabled={exportLoading}
+              className="bg-white border border-black/5 text-black px-10 py-4 rounded-full text-[11px] font-black uppercase tracking-[0.2em] hover:bg-black hover:text-white transition-all shadow-xl shadow-black/5 flex items-center gap-3"
+            >
+              <HiOutlineDocumentDownload className={`w-4 h-4 ${exportLoading ? 'animate-spin' : ''}`} />
+              Download Report
+            </button>
+
+            <button 
+              onClick={() => setIsImportModalOpen(true)}
+              className="bg-black text-white px-12 py-4 rounded-full text-[11px] font-black uppercase tracking-[0.3em] hover:bg-gray-800 transition-all shadow-2xl shadow-black/20 flex items-center gap-4 group"
+            >
+              Import Statement
+              <div className="bg-white rounded-full p-1.5 group-hover:translate-x-1 transition-transform">
+                <ArrowRight className="w-4 h-4 text-black" />
+              </div>
+            </button>
+          </div>
+        </div>
+
+        {/* Global Controls */}
+        <div className="flex flex-wrap items-center gap-6 mb-16">
+          <div className="bg-white border border-black/5 px-8 py-3 rounded-full flex items-center gap-6 shadow-sm">
+             <div className="flex items-center gap-3 text-[10px] font-black text-black/30 uppercase tracking-[0.3em]">
+               <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+               Live Context
+             </div>
+             <div className="w-px h-4 bg-black/10"></div>
+             <div className="flex items-center gap-4">
                <select 
                 value={filters.month}
                 onChange={(e) => setFilters({...filters, month: parseInt(e.target.value)})}
-                className="bg-transparent text-sm font-extrabold text-slate-600 outline-none cursor-pointer"
+                className="bg-transparent text-[11px] font-black text-black/60 uppercase tracking-[0.2em] outline-none cursor-pointer appearance-none"
               >
                 {Array.from({length: 12}, (_, i) => (
                   <option key={i+1} value={i+1}>{new Date(2000, i).toLocaleString('default', { month: 'long' })}</option>
                 ))}
               </select>
-              <div className="w-px h-4 bg-slate-300"></div>
               <select 
                 value={filters.year}
                 onChange={(e) => setFilters({...filters, year: parseInt(e.target.value)})}
-                className="bg-transparent text-sm font-extrabold text-slate-600 outline-none cursor-pointer"
+                className="bg-transparent text-[11px] font-black text-black/60 uppercase tracking-[0.2em] outline-none cursor-pointer appearance-none"
               >
-                {[2026, 2025, 2024, 2023, 2022, 2021, 2020].map(y => (
+                {[2026, 2025, 2024, 2023, 2022].map(y => (
                   <option key={y} value={y}>{y}</option>
                 ))}
               </select>
-            </div>
+             </div>
           </div>
         </div>
-
-        <div className="flex flex-wrap gap-3">
-          <button 
-            onClick={handleSyncSimulation}
-            disabled={simLoading}
-            className="px-5 py-2.5 glass-card !p-2.5 flex items-center gap-2 text-emerald-600 font-extrabold text-xs uppercase tracking-widest hover:scale-105"
-          >
-            {simLoading ? (
-               <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-emerald-500"></div>
-            ) : (
-              <HiOutlineRefresh className="w-4 h-4" />
-            )}
-            Sync Bank
-          </button>
-          <button 
-            onClick={handleExportPDF}
-            disabled={exportLoading}
-            className="px-5 py-2.5 glass-card !p-2.5 flex items-center gap-2 text-slate-500 font-bold text-sm hover:scale-105"
-          >
-            {exportLoading ? (
-              <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-primary"></div>
-            ) : (
-              <HiOutlineDocumentDownload className="w-5 h-5 text-primary" />
-            )}
-            Report
-          </button>
-          <button 
-            onClick={() => setIsImportModalOpen(true)}
-            className="btn-primary flex items-center gap-2 group"
-          >
-            <HiOutlineUpload className="w-5 h-5 group-hover:-translate-y-0.5 transition-transform" />
-            Import Statement
-          </button>
-        </div>
-      </div>
+      </FadeIn>
 
       {/* Main Bento Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <StaggerContainer className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* Row 1: Key Performance Metrics (Horizontal Row) */}
-        {/* 1. Total Income Card */}
-        <div className="card border-none bg-emerald-500 text-white shadow-xl shadow-emerald-500/20 relative overflow-hidden group">
-          <div className="relative z-10 p-2">
-            <p className="text-[10px] uppercase font-bold text-emerald-100 tracking-[0.2em] mb-1">Total Income (Credit)</p>
-            <h3 className="text-4xl font-black">₹{Number(summary?.month_income || 0).toLocaleString()}</h3>
-            <p className="text-[10px] mt-2 text-emerald-100/80 font-medium">Monthly total inflow</p>
-          </div>
-          <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-white/10 rounded-full blur-xl group-hover:scale-125 transition-transform duration-700"></div>
-        </div>
+        {/* KPI Cards */}
+        <StaggerItem>
+          <KpiCard 
+            title="Capital Inflow"
+            value={`₹${Number(summary?.month_income || 0).toLocaleString()}`}
+            status="Live Verification"
+          />
+        </StaggerItem>
 
-        {/* 2. Total Expense Card */}
-        <div className="card border-none bg-rose-500 text-white shadow-xl shadow-rose-500/20 relative overflow-hidden group">
-          <div className="relative z-10 p-2">
-            <p className="text-[10px] uppercase font-bold text-rose-100 tracking-[0.2em] mb-1">Total Expense (Debit)</p>
-            <h3 className="text-4xl font-black">₹{Number(summary?.month_total || 0).toLocaleString()}</h3>
-            <p className="text-[10px] mt-2 text-rose-100/80 font-medium">Monthly total outflow</p>
-          </div>
-          <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-white/10 rounded-full blur-xl group-hover:scale-125 transition-transform duration-700"></div>
-        </div>
+        <StaggerItem>
+          <KpiCard 
+            title="Capital Outflow"
+            value={`₹${Number(summary?.month_total || 0).toLocaleString()}`}
+            status="Algorithmic Categorization"
+            statusColor="rose"
+          />
+        </StaggerItem>
 
-        {/* 3. Monthly Savings Rate Card */}
-        <div className="card border-none premium-gradient text-white shadow-xl shadow-primary/20 relative overflow-hidden group">
-          <div className="relative z-10 p-2">
-            <p className="text-[10px] uppercase font-bold text-primary-light tracking-[0.2em] mb-1">Savings Efficiency</p>
-            <div className="flex items-baseline gap-2">
-              <h3 className="text-4xl font-black">{summary?.savings_rate || 0}%</h3>
-              <span className="text-xs font-bold text-primary-light">Rate</span>
+        <StaggerItem>
+          <KpiCard 
+            title="Efficiency Rating"
+            value={`${summary?.savings_rate || 0}%`}
+            subtitle="Yield Velocity"
+            dark={true}
+          >
+            <div className="mt-8 w-full h-1 bg-white/10 rounded-full overflow-hidden">
+              <motion.div 
+                initial={{ width: 0 }}
+                animate={{ width: `${Math.min(100, summary?.savings_rate || 0)}%` }}
+                transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
+                className="h-full bg-white shadow-[0_0_15px_rgba(255,255,255,0.4)]"
+              />
             </div>
-            <div className="mt-4 w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-white transition-all duration-1000"
-                style={{ width: `${Math.min(100, summary?.savings_rate || 0)}%` }}
-              ></div>
-            </div>
-          </div>
-        </div>
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-1000"></div>
+          </KpiCard>
+        </StaggerItem>
 
-        {/* Row 2: Category Analysis (Full Width) */}
-        <div className="lg:col-span-3 card glass-card border-none">
-          <div className="flex justify-between items-center mb-8">
-            <div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Expense Analysis</p>
-              <h3 className="text-2xl font-extrabold text-navy-dark tracking-tight">Category Breakdown</h3>
-            </div>
-            <div className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-500 bg-emerald-50 px-2.5 py-1 rounded-full uppercase tracking-widest border border-emerald-100">
-              AI Powered
-            </div>
-          </div>
-          <div className="h-[350px]">
-             <CategoryPieChart data={summary?.category_breakdown} />
-          </div>
-        </div>
-
-        {/* Row 3: Anomaly Security Center */}
-        <div className="lg:col-span-3">
-          <AnomalyAlarmCenter alerts={summary?.alerts} onActionComplete={refreshAll} />
-        </div>
-
-        {/* Row 4: Side-by-Side: Tax & AI Strategy */}
-        <div className="lg:col-span-1">
-           <TaxStrategyWidget />
-        </div>
-
-        <div className="lg:col-span-2 card glass-card border-none bg-navy-dark text-white relative overflow-hidden group shadow-2xl shadow-navy-dark/30 flex flex-col justify-center min-h-[220px]">
-          <div className="relative z-10 p-4">
-            <h3 className="text-xl font-extrabold mb-4 flex items-center gap-2 text-primary">
-              <HiOutlineLightBulb className="w-7 h-7 animate-pulse-soft" />
-              AI Fortune Strategy
-            </h3>
-            <p className="text-base text-slate-300 leading-relaxed italic group-hover:text-white transition-colors">
-              "{summary?.savings_rate > 30 
-                ? "Your financial discipline is world-class. With a " + summary?.savings_rate + "% savings rate, you could potentially retire 4.2 years earlier than previously projected if you reinvest the surplus into high-yield funds." 
-                : "Your savings velocity is slightly below the recommended 25% threshold. I've identified potential optimizations in your 'Lifestyle' and 'Subscriptions' categories that could recover ₹2,400 monthly."}"
-            </p>
-          </div>
-          <div className="absolute bottom-0 right-0 -mb-20 -mr-20 w-64 h-64 bg-primary/20 rounded-full blur-[100px]"></div>
-        </div>
-
-
-
-        {/* Row 4: Budget Adherence */}
-        <div className="lg:col-span-3 glass-card border-none shadow-xl shadow-slate-200/40">
-          <div className="flex justify-between items-center mb-10">
-             <h3 className="text-xl font-extrabold text-navy-dark tracking-tight uppercase tracking-widest text-[10px] font-black text-slate-400">Budget Adherence Matrix</h3>
-             <button className="text-xs font-bold text-primary hover:underline flex items-center gap-1">
-               Strategic Management <HiOutlineArrowRight />
-             </button>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {summary?.budget_progress?.map((budget, i) => (
-              <div key={i} className="space-y-3">
-                <div className="flex justify-between items-end">
-                  <span className="text-sm font-black text-navy-dark uppercase tracking-tighter">{budget.category}</span>
-                  <span className="text-[10px] font-bold text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded">₹{Number(budget.spent).toLocaleString()}</span>
-                </div>
-                <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                  <div 
-                    className={`h-full transition-all duration-1000 rounded-full ${budget.percentage > 100 ? 'bg-rose-500' : 'premium-gradient'}`}
-                    style={{ width: `${Math.min(100, budget.percentage)}%` }}
-                  ></div>
-                </div>
-                <div className="flex justify-between text-[11px] font-bold">
-                  <span className={budget.percentage > 100 ? 'text-rose-500' : 'text-primary'}>{budget.percentage}% utilized</span>
-                  <span className="text-slate-400">Limit: ₹{Number(budget.limit).toLocaleString()}</span>
-                </div>
+        {/* Category Breakdown */}
+        <StaggerItem className="lg:col-span-3">
+          <div className="glass-card !p-12">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
+              <div>
+                <p className="text-[11px] font-black text-black/40 uppercase tracking-[0.2em] mb-3">Portfolio Segmentation</p>
+                <h3 className="text-3xl font-medium text-black tracking-tight">Expenditure Architecture</h3>
               </div>
-            ))}
+              <div className="px-5 py-2 bg-black text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-full">
+                Neural Analysis Active
+              </div>
+            </div>
+            <div className="h-[450px]">
+               <CategoryPieChart data={summary?.category_breakdown} />
+            </div>
           </div>
-        </div>
+        </StaggerItem>
 
-      </div>
+        {/* Anomaly Center */}
+        <StaggerItem className="lg:col-span-3">
+          <div className="glass-card border-none !p-0 overflow-hidden">
+            <AnomalyAlarmCenter alerts={summary?.alerts} onActionComplete={refreshAll} />
+          </div>
+        </StaggerItem>
+
+        {/* AI Insight Card */}
+        <StaggerItem className="lg:col-span-2">
+          <div className="glass-card-dark !p-12 relative overflow-hidden group min-h-[300px] flex flex-col justify-center">
+            <div className="relative z-10 space-y-6">
+              <div className="flex items-center gap-4 text-white/40">
+                <HiOutlineLightBulb className="w-8 h-8 text-white group-hover:text-emerald-400 transition-colors" />
+                <span className="text-[11px] font-black uppercase tracking-[0.3em]">AI Observation Protocol</span>
+              </div>
+              <p className="text-2xl text-white/80 leading-relaxed font-medium tracking-tight">
+                "{summary?.savings_rate > 30 
+                  ? "Systemic capital retention is optimal. Your current savings velocity permits a 4.2-year acceleration in long-term wealth targets if diverted to high-yield instruments." 
+                  : "Savings velocity is operating below the 25% efficiency threshold. Structural optimizations identified in lifestyle overhead could recover ₹2,400 per cycle."}"
+              </p>
+            </div>
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 group-hover:scale-125 transition-transform duration-1000" />
+          </div>
+        </StaggerItem>
+
+        <StaggerItem className="lg:col-span-1">
+           <TaxStrategyWidget />
+        </StaggerItem>
+
+        {/* Budget Adherence */}
+        <StaggerItem className="lg:col-span-3">
+          <div className="glass-card !p-12">
+            <div className="flex justify-between items-center mb-16">
+               <h3 className="text-[11px] font-black text-black/40 uppercase tracking-[0.2em]">Operational Thresholds</h3>
+               <Link 
+                 to="/budgets"
+                 className="group flex items-center gap-2 text-[11px] font-black text-black/40 uppercase tracking-[0.2em] hover:text-black transition-all"
+               >
+                 Manage Limits 
+                 <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+               </Link>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+              {summary?.budget_progress?.map((budget, i) => (
+                <div key={i} className="space-y-6">
+                  <div className="flex justify-between items-end">
+                    <span className="text-sm font-bold text-black tracking-tight">{budget.category}</span>
+                    <span className="text-[11px] font-black text-black/40 tabular-nums">₹{Number(budget.spent).toLocaleString()}</span>
+                  </div>
+                  <div className="w-full h-1 bg-black/5 rounded-full overflow-hidden">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${Math.min(100, budget.percentage)}%` }}
+                      transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1], delay: i * 0.1 }}
+                      className={`h-full ${budget.percentage > 100 ? 'bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.3)]' : 'bg-black shadow-[0_0_10px_rgba(0,0,0,0.2)]'}`}
+                    />
+                  </div>
+                  <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
+                    <span className={budget.percentage > 100 ? 'text-rose-500' : 'text-black/60'}>{budget.percentage}% Depleted</span>
+                    <span className="text-black/30">Target: ₹{Number(budget.limit).toLocaleString()}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </StaggerItem>
+
+      </StaggerContainer>
 
       <StatementImportModal 
         isOpen={isImportModalOpen} 
