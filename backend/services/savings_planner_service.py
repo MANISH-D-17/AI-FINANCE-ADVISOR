@@ -251,34 +251,41 @@ COMPUTED PLAN (math already verified — do NOT change numbers):
 - Verdict: {rule_plan['financial_health_verdict']}
 
 Equity SIP suggested: ₹{rule_plan['allocation']['equity_mutual_funds']['monthly_sip']:,.0f}/month
-FD allocation: ₹{rule_plan['allocation']['fixed_deposits']['monthly_rd_or_lumpsum']:,.0f}/month
-Gold allocation: ₹{rule_plan['allocation']['gold']['monthly']:,.0f}/month
-
-Generate ONLY this JSON structure:
-{{
+FD allocation: ₹{rule_plan['allocation']['fixed_deposits']['monthly_rd_or_lumpsum']:,.0f}/month  Generate ONLY this JSON structure:
+{
   "key_insights": [
     "insight 1 — specific to their numbers",
     "insight 2",
     "insight 3"
   ],
   "goal_strategies": [
-    {{
+    {
       "goal": "goal name from input",
       "monthly_required": 0,
       "recommended_instrument": "specific fund/FD/etc",
       "timeline_achievable": true,
       "tip": "specific advice"
-    }}
+    }
   ],
-  "tax_optimization": {{
+  "tax_optimization": {
     "section_80c_headroom": 0,
     "recommended_instruments": [],
     "potential_tax_saving": 0,
     "tip": "specific tip"
-  }},
+  },
   "behavioral_nudges": ["nudge 1", "nudge 2"],
-  "early_warnings": ["warning if any"]
-}}"""
+  "early_warnings": ["warning if any"],
+  "executive_advisory": {
+    "title": "Senior Advisor Strategic Assessment",
+    "greeting": "Dear Client,",
+    "analysis": "A sophisticated, empathetic advisory analysis of their situation. If critical, detail exactly why their savings rate is at a critical level and what risks it presents. Speak in the tone of a wise, highly experienced partner.",
+    "actionable_steps": [
+      "Detail exactly which expense category should be decreased (naming them specifically based on their input) and by how much to create surplus.",
+      "Explain how they can invest that newly freed surplus to achieve their specific milestones (naming the milestones from goals input) in the given timeline."
+    ],
+    "conclusion": "A highly motivating, reassuring financial wisdom quote or directive."
+  }
+}"""
 
     try:
         llm_enrichment = await call_llm_json(system_prompt, user_message, max_tokens=3000)
@@ -289,6 +296,7 @@ Generate ONLY this JSON structure:
         rule_plan["tax_optimization"] = llm_enrichment.get("tax_optimization", {})
         rule_plan["behavioral_nudges"] = llm_enrichment.get("behavioral_nudges", [])
         rule_plan["early_warnings"] = llm_enrichment.get("early_warnings", [])
+        rule_plan["executive_advisory"] = llm_enrichment.get("executive_advisory", {})
         rule_plan["data_source"] = "ai_enhanced"
 
     except Exception as e:
@@ -300,6 +308,23 @@ Generate ONLY this JSON structure:
             "Emergency fund should cover 6 months of expenses before any investment.",
             "Start SIP immediately — time in market beats timing the market.",
         ]
+        
+        # Build logical fallback for executive advisory
+        leaks = [rec for rec in rule_plan.get("expense_recommendations", []) if rec["action"] == "reduce"]
+        leak_str = ", ".join([f"{rec['category']} (saving ₹{rec['potential_savings']:,.0f})" for rec in leaks[:2]])
+        action_step_1 = f"Immediately decrease spending leaks in: {leak_str}." if leaks else "Review all variable categories to identify structural leaks."
+        
+        goals_list = [g["name"] for g in goals]
+        goals_str = ", ".join(goals_list) if goals_list else "your wealth milestones"
+        action_step_2 = f"Redirect all recovered cash flow towards SIPs/FDs to secure {goals_str} over the {time_horizon_years}-year window."
+
+        rule_plan["executive_advisory"] = {
+            "title": "Senior Advisor Strategic Assessment",
+            "greeting": "Dear Client,",
+            "analysis": f"Your current savings rate is {rule_plan['savings_rate_pct']}%, which puts your account in a {rule_plan['financial_health_verdict']} category. Let's work together to realign your capital allocation, reduce variable leaks, and secure your financial future.",
+            "actionable_steps": [action_step_1, action_step_2],
+            "conclusion": "A disciplined financial strategy is a marathon, not a sprint. Take these steps today to stabilize your wealth trajectory."
+        }
         rule_plan["data_source"] = "rule_based_fallback"
 
     return rule_plan

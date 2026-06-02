@@ -517,6 +517,64 @@ export default function SavingsPlannerPage() {
               </div>
             )}
 
+            {/* Executive Advisor Strategic Assessment */}
+            {plan?.executive_advisory && (
+              <div className="glass-card-dark !p-12 relative overflow-hidden group border-l-4 border-l-amber-400 shadow-[0_20px_50px_rgba(245,158,11,0.08)]">
+                <div className="absolute top-0 right-0 w-96 h-96 bg-white/[0.02] rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 group-hover:scale-110 transition-transform duration-700" />
+                <div className="relative z-10 space-y-8">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-white/10">
+                    <div className="flex items-center gap-5">
+                      <div className="w-14 h-14 bg-amber-400/10 text-amber-300 rounded-full flex items-center justify-center border border-amber-400/20 shadow-lg shadow-amber-400/5">
+                        <HiOutlineUserGroup className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h4 className="text-xl font-bold text-white tracking-tight">{plan.executive_advisory.title || "Senior Partner Strategic Advisory"}</h4>
+                        <p className="text-[10px] font-black text-amber-400/60 uppercase tracking-[0.2em] mt-1">SEBI-Aligned Wealth Consulting Directive</p>
+                      </div>
+                    </div>
+                    {plan.financial_health_verdict === 'critical' && (
+                      <span className="self-start md:self-auto px-5 py-2 bg-rose-500/10 border border-rose-500/30 text-rose-300 rounded-full text-[10px] font-black uppercase tracking-[0.25em]">
+                        ⚠ Portfolio Risk Intervention Active
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="space-y-6">
+                    <p className="text-xs font-black text-amber-400/40 uppercase tracking-widest">{plan.executive_advisory.greeting || "Dear Client,"}</p>
+                    <p className="text-base text-white/80 leading-relaxed font-medium tracking-tight">
+                      {plan.executive_advisory.analysis}
+                    </p>
+                  </div>
+
+                  {plan.executive_advisory.actionable_steps?.length > 0 && (
+                    <div className="space-y-4 bg-white/[0.02] border border-white/5 p-8 rounded-3xl">
+                      <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.25em] mb-4">Strategic Realignment Protocols</p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {plan.executive_advisory.actionable_steps.map((stepText, idx) => (
+                          <div key={idx} className="flex gap-4 items-start p-4 rounded-2xl bg-white/[0.01] border border-white/[0.03]">
+                            <span className="w-6 h-6 rounded-full bg-amber-400/10 text-amber-300 border border-amber-400/20 text-xs font-bold flex items-center justify-center flex-shrink-0">
+                              {idx + 1}
+                            </span>
+                            <p className="text-sm text-white/70 leading-relaxed font-medium">{stepText}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="pt-6 border-t border-white/10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <p className="text-sm font-semibold italic text-white/50">
+                      "{plan.executive_advisory.conclusion}"
+                    </p>
+                    <div className="text-right">
+                      <p className="text-xs font-black text-white uppercase tracking-wider">Antigravity Partner Group</p>
+                      <p className="text-[9px] font-black text-amber-400/60 uppercase tracking-widest mt-0.5">Senior Wealth Strategy Division</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Insights Section */}
             {plan?.key_insights && (
               <div className="glass-card !p-10 space-y-6">
