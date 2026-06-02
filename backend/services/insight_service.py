@@ -102,16 +102,23 @@ def _rule_based_insights(stats: dict) -> list[str]:
 
 
 async def _gemini_insights(stats: dict) -> list[str]:
-    """Call Gemini to generate natural language insights."""
-    if not settings.GEMINI_API_KEY:
+    """Call Gemini to generate natural language insights with fallback support."""
+    gemini_keys = []
+    if getattr(settings, "GEMINI_API_KEY", None):
+        gemini_keys.append(("primary", settings.GEMINI_API_KEY))
+    if getattr(settings, "FALLBACK_GEMINI_API_KEY", None):
+        gemini_keys.append(("fallback", settings.FALLBACK_GEMINI_API_KEY))
+
+    if not gemini_keys:
         return []
 
-    try:
-        import google.generativeai as genai
-        genai.configure(api_key=settings.GEMINI_API_KEY)
-        model = genai.GenerativeModel("gemini-2.0-flash")
+    for key_type, api_key in gemini_keys:
+        try:
+            import google.generativeai as genai
+            genai.configure(api_key=api_key)
+            model = genai.GenerativeModel("gemini-2.0-flash")
 
-        prompt = f"""You are a personal finance advisor AI. Analyze these spending statistics and give exactly 3 short, actionable insights (1-2 sentences each). Be specific, friendly, and use Indian Rupees (₹).
+            prompt = f"""You are a personal finance advisor AI. Analyze these spending statistics and give exactly 3 short, actionable insights (1-2 sentences each). Be specific, friendly, and use Indian Rupees (₹).
 
 Stats:
 - This month total: ₹{stats['curr_total']:.0f}
@@ -123,18 +130,19 @@ Stats:
 
 Return ONLY a JSON array of 3 strings, nothing else. Example: ["insight 1", "insight 2", "insight 3"]"""
 
-        loop = asyncio.get_event_loop()
-        response = await loop.run_in_executor(_executor, lambda: model.generate_content(prompt))
-        text = response.text.strip()
-        if text.startswith("```"):
-            text = text.split("```")[1]
-            if text.startswith("json"):
-                text = text[4:]
-        parsed = json.loads(text.strip())
-        if isinstance(parsed, list):
-            return [str(i) for i in parsed[:3]]
-    except Exception:
-        pass
+            loop = asyncio.get_event_loop()
+            response = await loop.run_in_executor(_executor, lambda: model.generate_content(prompt))
+            text = response.text.strip()
+            if text.startswith("```"):
+                text = text.split("```")[1]
+                if text.startswith("json"):
+                    text = text[4:]
+            parsed = json.loads(text.strip())
+            if isinstance(parsed, list):
+                return [str(i) for i in parsed[:3]]
+        except Exception as e:
+            print(f"DEBUG: Insights service ({key_type} key) failed: {str(e)}")
+            continue
     return []
 
 

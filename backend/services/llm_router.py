@@ -69,66 +69,73 @@ async def _call_claude(
     max_tokens: int = 4096,
     response_format: str = "text",
 ) -> LLMResponse:
-    """Call Claude claude-sonnet-4-20250514 via Anthropic SDK."""
+    """Call Claude claude-sonnet-4-20250514 via Anthropic SDK with fallback key support."""
     from config import settings
 
-    if not getattr(settings, "ANTHROPIC_API_KEY", None):
+    keys_to_try = []
+    if getattr(settings, "ANTHROPIC_API_KEY", None):
+        keys_to_try.append(("primary", settings.ANTHROPIC_API_KEY))
+    if getattr(settings, "FALLBACK_ANTHROPIC_API_KEY", None):
+        keys_to_try.append(("fallback", settings.FALLBACK_ANTHROPIC_API_KEY))
+
+    if not keys_to_try:
         return LLMResponse(
             content="",
             provider=LLMProvider.CLAUDE,
             error="ANTHROPIC_API_KEY not configured",
         )
 
-    if _rate_limits[LLMProvider.CLAUDE].is_blocked():
-        return LLMResponse(
-            content="",
-            provider=LLMProvider.CLAUDE,
-            error="Claude rate limited",
-        )
-
     start = time.time()
-    try:
-        import anthropic
+    last_err = None
 
-        client = anthropic.AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
+    for key_type, api_key in keys_to_try:
+        try:
+            import anthropic
 
-        messages = [{"role": "user", "content": user_message}]
-        if response_format == "json":
-            system_prompt = (
-                system_prompt
-                + "\n\nIMPORTANT: Respond ONLY with valid JSON. No markdown fences, "
-                "no preamble, no explanation. Pure JSON object."
+            client = anthropic.AsyncAnthropic(api_key=api_key)
+
+            messages = [{"role": "user", "content": user_message}]
+            full_system = system_prompt
+            if response_format == "json":
+                full_system = (
+                    system_prompt
+                    + "\n\nIMPORTANT: Respond ONLY with valid JSON. No markdown fences, "
+                    "no preamble, no explanation. Pure JSON object."
+                )
+
+            response = await client.messages.create(
+                model="claude-sonnet-4-20250514",
+                max_tokens=max_tokens,
+                system=full_system,
+                messages=messages,
             )
 
-        response = await client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=max_tokens,
-            system=system_prompt,
-            messages=messages,
-        )
+            content = response.content[0].text
+            tokens = response.usage.input_tokens + response.usage.output_tokens
+            _rate_limits[LLMProvider.CLAUDE].mark_success()
 
-        content = response.content[0].text
-        tokens = response.usage.input_tokens + response.usage.output_tokens
-        _rate_limits[LLMProvider.CLAUDE].mark_success()
+            return LLMResponse(
+                content=content,
+                provider=LLMProvider.CLAUDE,
+                tokens_used=tokens,
+                latency_ms=(time.time() - start) * 1000,
+            )
 
-        return LLMResponse(
-            content=content,
-            provider=LLMProvider.CLAUDE,
-            tokens_used=tokens,
-            latency_ms=(time.time() - start) * 1000,
-        )
+        except Exception as e:
+            err_str = str(e)
+            last_err = err_str
+            logger.warning(f"Claude {key_type} key call failed: {err_str}")
+            continue
 
-    except Exception as e:
-        err_str = str(e)
-        if "rate_limit" in err_str.lower() or "429" in err_str:
-            _rate_limits[LLMProvider.CLAUDE].mark_rate_limited(retry_after_seconds=60)
-        logger.warning(f"Claude call failed: {err_str}")
-        return LLMResponse(
-            content="",
-            provider=LLMProvider.CLAUDE,
-            error=err_str,
-            latency_ms=(time.time() - start) * 1000,
-        )
+    if last_err and ("rate_limit" in last_err.lower() or "429" in last_err or "quota" in last_err.lower()):
+        _rate_limits[LLMProvider.CLAUDE].mark_rate_limited(retry_after_seconds=60)
+
+    return LLMResponse(
+        content="",
+        provider=LLMProvider.CLAUDE,
+        error=f"All Anthropic keys failed. Last error: {last_err}",
+        latency_ms=(time.time() - start) * 1000,
+    )
 
 
 async def _call_gemini(
@@ -137,59 +144,65 @@ async def _call_gemini(
     max_tokens: int = 4096,
     response_format: str = "text",
 ) -> LLMResponse:
-    """Call Gemini 2.0 Flash via Google SDK."""
+    """Call Gemini 2.0 Flash via Google SDK with fallback key support."""
     from config import settings
 
-    if not getattr(settings, "GEMINI_API_KEY", None):
+    keys_to_try = []
+    if getattr(settings, "GEMINI_API_KEY", None):
+        keys_to_try.append(("primary", settings.GEMINI_API_KEY))
+    if getattr(settings, "FALLBACK_GEMINI_API_KEY", None):
+        keys_to_try.append(("fallback", settings.FALLBACK_GEMINI_API_KEY))
+
+    if not keys_to_try:
         return LLMResponse(
             content="",
             provider=LLMProvider.GEMINI,
             error="GEMINI_API_KEY not configured",
         )
 
-    if _rate_limits[LLMProvider.GEMINI].is_blocked():
-        return LLMResponse(
-            content="",
-            provider=LLMProvider.GEMINI,
-            error="Gemini rate limited",
-        )
-
     start = time.time()
-    try:
-        import google.generativeai as genai
+    last_err = None
 
-        genai.configure(api_key=settings.GEMINI_API_KEY)
+    for key_type, api_key in keys_to_try:
+        try:
+            import google.generativeai as genai
 
-        full_prompt = system_prompt
-        if response_format == "json":
-            full_prompt += (
-                "\n\nIMPORTANT: Respond ONLY with valid JSON. No markdown fences."
+            genai.configure(api_key=api_key)
+
+            full_prompt = system_prompt
+            if response_format == "json":
+                full_prompt += (
+                    "\n\nIMPORTANT: Respond ONLY with valid JSON. No markdown fences."
+                )
+
+            model = genai.GenerativeModel(
+                "gemini-2.0-flash", system_instruction=full_prompt
+            )
+            response = model.generate_content(user_message)
+            content = response.text
+
+            _rate_limits[LLMProvider.GEMINI].mark_success()
+            return LLMResponse(
+                content=content,
+                provider=LLMProvider.GEMINI,
+                latency_ms=(time.time() - start) * 1000,
             )
 
-        model = genai.GenerativeModel(
-            "gemini-2.0-flash", system_instruction=full_prompt
-        )
-        response = model.generate_content(user_message)
-        content = response.text
+        except Exception as e:
+            err_str = str(e)
+            last_err = err_str
+            logger.warning(f"Gemini {key_type} key call failed: {err_str}")
+            continue
 
-        _rate_limits[LLMProvider.GEMINI].mark_success()
-        return LLMResponse(
-            content=content,
-            provider=LLMProvider.GEMINI,
-            latency_ms=(time.time() - start) * 1000,
-        )
+    if last_err and ("quota" in last_err.lower() or "429" in last_err or "limit" in last_err.lower()):
+        _rate_limits[LLMProvider.GEMINI].mark_rate_limited(retry_after_seconds=60)
 
-    except Exception as e:
-        err_str = str(e)
-        if "quota" in err_str.lower() or "429" in err_str:
-            _rate_limits[LLMProvider.GEMINI].mark_rate_limited(retry_after_seconds=60)
-        logger.warning(f"Gemini call failed: {err_str}")
-        return LLMResponse(
-            content="",
-            provider=LLMProvider.GEMINI,
-            error=err_str,
-            latency_ms=(time.time() - start) * 1000,
-        )
+    return LLMResponse(
+        content="",
+        provider=LLMProvider.GEMINI,
+        error=f"All Gemini keys failed. Last error: {last_err}",
+        latency_ms=(time.time() - start) * 1000,
+    )
 
 
 async def call_llm(

@@ -167,14 +167,20 @@ async def call_agent(user_id: str, query: str, history: List[dict] = []):
         else:
             formatted_history.append(("assistant", h["content"]))
 
-    # 1. Try Gemini first
-    if settings.GEMINI_API_KEY:
+    # 1. Try Gemini first (with fallback key support)
+    gemini_keys = []
+    if getattr(settings, "GEMINI_API_KEY", None):
+        gemini_keys.append(("primary", settings.GEMINI_API_KEY))
+    if getattr(settings, "FALLBACK_GEMINI_API_KEY", None):
+        gemini_keys.append(("fallback", settings.FALLBACK_GEMINI_API_KEY))
+
+    for key_type, g_key in gemini_keys:
         try:
-            print("DEBUG: Trying Gemini AI Advisor...")
+            print(f"DEBUG: Trying Gemini AI Advisor ({key_type} key)...")
             from langchain_google_genai import ChatGoogleGenerativeAI, HarmCategory, HarmBlockThreshold
             llm = ChatGoogleGenerativeAI(
                 model="gemini-2.0-flash",
-                google_api_key=settings.GEMINI_API_KEY,
+                google_api_key=g_key,
                 temperature=0,
                 google_api_version="v1",
                 safety_settings={
@@ -186,23 +192,29 @@ async def call_agent(user_id: str, query: str, history: List[dict] = []):
             )
             return await run_langchain_agent(llm, tools, query, formatted_history)
         except Exception as e:
-            print(f"DEBUG: Gemini AI Advisor failed: {str(e)}")
+            print(f"DEBUG: Gemini AI Advisor ({key_type} key) failed: {str(e)}")
             if "quota" not in str(e).lower() and "exceeded" not in str(e).lower() and "safety" in str(e).lower():
                 return "I apologize, but I cannot provide an answer to that specific query due to safety filters. Try rephrasing your request about financial data."
 
-    # 2. Try Claude Fallback second
-    if settings.ANTHROPIC_API_KEY:
+    # 2. Try Claude Fallback second (with fallback key support)
+    claude_keys = []
+    if getattr(settings, "ANTHROPIC_API_KEY", None):
+        claude_keys.append(("primary", settings.ANTHROPIC_API_KEY))
+    if getattr(settings, "FALLBACK_ANTHROPIC_API_KEY", None):
+        claude_keys.append(("fallback", settings.FALLBACK_ANTHROPIC_API_KEY))
+
+    for key_type, c_key in claude_keys:
         try:
-            print("DEBUG: Trying Anthropic Claude Fallback...")
+            print(f"DEBUG: Trying Anthropic Claude Fallback ({key_type} key)...")
             from langchain_anthropic import ChatAnthropic
             llm = ChatAnthropic(
                 model="claude-3-5-sonnet-20241022",
-                api_key=settings.ANTHROPIC_API_KEY,
+                api_key=c_key,
                 temperature=0
             )
             return await run_langchain_agent(llm, tools, query, formatted_history)
         except Exception as e:
-            print(f"DEBUG: Claude AI Advisor failed: {str(e)}")
+            print(f"DEBUG: Claude AI Advisor ({key_type} key) failed: {str(e)}")
 
     # 3. Local Heuristic rule engine fallback
     print("DEBUG: Falling back to High-Resiliency Local Engine...")

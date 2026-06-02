@@ -40,30 +40,42 @@ Answer the user's question directly based on this data. If you don't have enough
 
 
 async def chat_with_ai(db: Session, user_id: str, messages: list[ChatMessage]) -> str:
-    if not settings.GEMINI_API_KEY:
+    gemini_keys = []
+    if getattr(settings, "GEMINI_API_KEY", None):
+        gemini_keys.append(("primary", settings.GEMINI_API_KEY))
+    if getattr(settings, "FALLBACK_GEMINI_API_KEY", None):
+        gemini_keys.append(("fallback", settings.FALLBACK_GEMINI_API_KEY))
+
+    if not gemini_keys:
         return "⚠️ AI chat is not configured. Please add your GEMINI_API_KEY to the backend .env file."
 
-    try:
-        import google.generativeai as genai
-        genai.configure(api_key=settings.GEMINI_API_KEY)
+    last_err = None
+    for key_type, api_key in gemini_keys:
+        try:
+            import google.generativeai as genai
+            genai.configure(api_key=api_key)
 
-        system_prompt = _build_system_prompt(db, user_id)
-        model = genai.GenerativeModel(
-            "gemini-2.0-flash",
-            system_instruction=system_prompt,
-        )
+            system_prompt = _build_system_prompt(db, user_id)
+            model = genai.GenerativeModel(
+                "gemini-2.0-flash",
+                system_instruction=system_prompt,
+            )
 
-        # Convert to Gemini chat history format
-        history = []
-        for msg in messages[:-1]:  # all but last
-            history.append({
-                "role": "user" if msg.role == "user" else "model",
-                "parts": [msg.content],
-            })
+            # Convert to Gemini chat history format
+            history = []
+            for msg in messages[:-1]:  # all but last
+                history.append({
+                    "role": "user" if msg.role == "user" else "model",
+                    "parts": [msg.content],
+                })
 
-        chat = model.start_chat(history=history)
-        response = chat.send_message(messages[-1].content)
-        return response.text
+            chat = model.start_chat(history=history)
+            response = chat.send_message(messages[-1].content)
+            return response.text
 
-    except Exception as e:
-        return f"I'm having trouble connecting to the AI service right now. Please try again shortly. (Error: {str(e)[:100]})"
+        except Exception as e:
+            last_err = str(e)
+            print(f"DEBUG: Chat service ({key_type} key) failed: {last_err}")
+            continue
+
+    return f"I'm having trouble connecting to the AI service right now. Please try again shortly. (Error: {last_err[:100]})"
