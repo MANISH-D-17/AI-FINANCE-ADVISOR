@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useExpenses } from '../hooks/useFinance';
 import ExpenseForm from '../components/expenses/ExpenseForm';
 import ExpenseTable from '../components/expenses/ExpenseTable';
@@ -193,43 +194,46 @@ const ExpensesPage = () => {
         )}
       </div>
 
-      <AnimatePresence>
-        {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsModalOpen(false)}
-              className="absolute inset-0 bg-black/40 backdrop-blur-md" 
-            />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 30 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 30 }}
-              className="bg-white rounded-[3rem] shadow-[0_30px_100px_rgba(0,0,0,0.2)] w-full max-w-xl overflow-hidden relative z-10 border border-black/5"
-            >
-              <div className="flex justify-between items-center px-12 py-10 border-b border-black/[0.03]">
-                <h3 className="text-3xl font-medium text-black tracking-halo">
-                  {editingExpense ? 'Modify Architecture' : 'New Directive'}
-                </h3>
-                <button 
-                  onClick={() => setIsModalOpen(false)}
-                  className="text-black/20 hover:bg-black/5 p-3 rounded-full transition-all"
-                >
-                  <HiOutlineX className="w-8 h-8" />
-                </button>
-              </div>
-              <div className="px-12 py-12">
-                <ExpenseForm 
-                  onSubmit={handleSubmit} 
-                  initialData={editingExpense} 
-                />
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      {createPortal(
+        <AnimatePresence>
+          {isModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsModalOpen(false)}
+                className="absolute inset-0 bg-black/40 backdrop-blur-md" 
+              />
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95, y: 30 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 30 }}
+                className="bg-white rounded-[3rem] shadow-[0_30px_100px_rgba(0,0,0,0.2)] w-full max-w-xl overflow-hidden relative z-10 border border-black/5"
+              >
+                <div className="flex justify-between items-center px-12 py-10 border-b border-black/[0.03]">
+                  <h3 className="text-3xl font-medium text-black tracking-halo">
+                    {editingExpense ? 'Modify Architecture' : 'New Directive'}
+                  </h3>
+                  <button 
+                    onClick={() => setIsModalOpen(false)}
+                    className="text-black/20 hover:bg-black/5 p-3 rounded-full transition-all"
+                  >
+                    <HiOutlineX className="w-8 h-8" />
+                  </button>
+                </div>
+                <div className="px-12 py-12">
+                  <ExpenseForm 
+                    onSubmit={handleSubmit} 
+                    initialData={editingExpense} 
+                  />
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 };
