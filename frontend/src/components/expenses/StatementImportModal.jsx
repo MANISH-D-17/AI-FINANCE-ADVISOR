@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { HiOutlineCloudUpload, HiOutlineX, HiOutlineCheckCircle, HiOutlineExclamationCircle } from 'react-icons/hi';
 import apiClient from '../../api/client';
 import toast from 'react-hot-toast';
@@ -70,7 +71,7 @@ const StatementImportModal = ({ isOpen, onClose, onComplete }) => {
     }
   };
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
@@ -264,7 +265,8 @@ const StatementImportModal = ({ isOpen, onClose, onComplete }) => {
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 };
 
