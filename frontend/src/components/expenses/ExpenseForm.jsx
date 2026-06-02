@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import apiClient from '../../api/client';
 
-const CATEGORIES = ["Food", "Travel", "Shopping", "Bills", "Entertainment", "Health", "Other"];
+const CATEGORIES = ["Food", "Travel", "Shopping", "Bills", "Entertainment", "Health", "Friend", "Unknown", "Other"];
 
 const ExpenseForm = ({ onSubmit, initialData = null }) => {
   const [formData, setFormData] = useState({
@@ -15,11 +15,23 @@ const ExpenseForm = ({ onSubmit, initialData = null }) => {
 
   useEffect(() => {
     if (initialData) {
+      // Safely normalize date to YYYY-MM-DD to avoid invalid/blank date inputs in the HTML form
+      let parsedDate = '';
+      try {
+        if (initialData.date) {
+          parsedDate = new Date(initialData.date).toISOString().split('T')[0];
+        } else {
+          parsedDate = new Date().toISOString().split('T')[0];
+        }
+      } catch (e) {
+        parsedDate = new Date().toISOString().split('T')[0];
+      }
+
       setFormData({
-        amount: initialData.amount,
-        category: initialData.category,
+        amount: initialData.amount !== undefined && initialData.amount !== null ? String(initialData.amount) : '',
+        category: initialData.category || 'Other',
         description: initialData.description || '',
-        date: initialData.date,
+        date: parsedDate,
       });
     }
   }, [initialData]);

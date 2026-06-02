@@ -3,7 +3,7 @@ import { HiOutlineTrash, HiOutlinePencil, HiOutlineExclamation } from 'react-ico
 import { motion } from 'framer-motion';
 import { StaggerContainer, StaggerItem } from '../ui/AnimatedContainer';
 
-const ExpenseTable = ({ expenses, onEdit, onDelete }) => {
+const ExpenseTable = ({ expenses, onEdit, onDelete, sortOrder, onToggleSort }) => {
   if (expenses.length === 0) {
     return (
       <motion.div 
@@ -22,25 +22,30 @@ const ExpenseTable = ({ expenses, onEdit, onDelete }) => {
 
   return (
     <div className="glass-card !p-0 border-none overflow-hidden !rounded-[2.5rem]">
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="border-b border-black/[0.03]">
-              <th className="px-10 py-6 text-[10px] font-black text-black/30 uppercase tracking-[0.3em]">Temporal Mark</th>
-              <th className="px-10 py-6 text-[10px] font-black text-black/30 uppercase tracking-[0.3em]">Directive Logic</th>
-              <th className="px-10 py-6 text-[10px] font-black text-black/30 uppercase tracking-[0.3em]">Classification</th>
-              <th className="px-10 py-6 text-[10px] font-black text-black/30 uppercase tracking-[0.3em] text-right">Capital Velocity</th>
-              <th className="px-10 py-6 text-[10px] font-black text-black/30 uppercase tracking-[0.3em] text-right">Operations</th>
-            </tr>
-          </thead>
-          <StaggerContainer component="tbody">
+      <table className="w-full text-left border-collapse">
+        <thead>
+          <tr className="border-b border-black/[0.03]">
+            <th 
+              onClick={onToggleSort}
+              className="px-10 py-6 text-[10px] font-black text-black/30 uppercase tracking-[0.3em] cursor-pointer select-none hover:text-black transition-colors"
+            >
+              <div className="flex items-center gap-1.5">
+                Temporal Mark
+                <span className="text-[9px] text-black">
+                  {sortOrder === 'desc' ? '▼' : '▲'}
+                </span>
+              </div>
+            </th>
+            <th className="px-10 py-6 text-[10px] font-black text-black/30 uppercase tracking-[0.3em]">Directive Logic</th>
+            <th className="px-10 py-6 text-[10px] font-black text-black/30 uppercase tracking-[0.3em]">Classification</th>
+            <th className="px-10 py-6 text-[10px] font-black text-black/30 uppercase tracking-[0.3em] text-right">Capital Velocity</th>
+            <th className="px-10 py-6 text-[10px] font-black text-black/30 uppercase tracking-[0.3em] text-right">Operations</th>
+          </tr>
+        </thead>
+          <tbody>
             {expenses.map((expense) => (
-              <motion.tr 
+              <tr 
                 key={expense.id}
-                variants={{
-                  hidden: { opacity: 0, y: 10 },
-                  visible: { opacity: 1, y: 0 }
-                }}
                 className="hover:bg-black/[0.02] transition-colors group border-b border-black/[0.01] last:border-none"
               >
                 <td className="px-10 py-6 text-[13px] text-black/40 tabular-nums font-medium whitespace-nowrap">
@@ -52,13 +57,15 @@ const ExpenseTable = ({ expenses, onEdit, onDelete }) => {
                 </td>
                 <td className="px-10 py-6">
                   <div className="flex items-center gap-5">
-                    <div className="w-10 h-10 bg-black/5 rounded-full flex items-center justify-center text-black/20 group-hover:bg-black group-hover:text-white transition-all duration-400 font-black text-xs">
-                      {expense.description?.[0] || 'T'}
+                    <div className="w-10 h-10 bg-black/5 rounded-full flex items-center justify-center text-black/20 group-hover:bg-black group-hover:text-white transition-all duration-400 font-black text-xs uppercase">
+                      {expense.description?.[0] || expense.category?.[0] || 'T'}
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-base font-medium text-black line-clamp-1 tracking-tight">{expense.description || '-'}</span>
+                      <span className="text-base font-medium text-black line-clamp-1 tracking-tight">
+                        {expense.description || expense.category || 'Transaction'}
+                      </span>
                       {expense.is_anomaly && (
-                        <span className="text-[9px] font-black text-black bg-black/5 px-2 py-0.5 rounded-full uppercase tracking-widest mt-1 w-fit">Systemic Anomaly</span>
+                        <span className="text-[9px] font-black text-rose-500 bg-rose-50 px-2 py-0.5 rounded-full uppercase tracking-widest mt-1 w-fit">Systemic Anomaly</span>
                       )}
                     </div>
                   </div>
@@ -72,10 +79,10 @@ const ExpenseTable = ({ expenses, onEdit, onDelete }) => {
                   ₹{Number(expense.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                 </td>
                 <td className="px-10 py-6 text-right whitespace-nowrap">
-                  <div className="flex justify-end space-x-2 opacity-0 group-hover:opacity-100 transition-all duration-400">
+                  <div className="flex justify-end space-x-2 opacity-45 group-hover:opacity-100 transition-all duration-400">
                     <button 
                       onClick={() => onEdit(expense)}
-                      className="p-3 text-black/20 hover:text-black hover:bg-black/5 rounded-full transition-all"
+                      className="p-3 text-black/40 hover:text-black hover:bg-black/5 rounded-full transition-all"
                     >
                       <HiOutlinePencil className="w-5 h-5" />
                     </button>
@@ -87,11 +94,10 @@ const ExpenseTable = ({ expenses, onEdit, onDelete }) => {
                     </button>
                   </div>
                 </td>
-              </motion.tr>
+              </tr>
             ))}
-          </StaggerContainer>
+          </tbody>
         </table>
-      </div>
     </div>
   );
 };

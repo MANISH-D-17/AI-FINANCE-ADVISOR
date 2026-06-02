@@ -5,7 +5,7 @@ import { HiOutlineSave, HiOutlineTrash, HiOutlineLightBulb } from 'react-icons/h
 import { motion } from 'framer-motion';
 import { FadeIn, StaggerContainer, StaggerItem } from '../components/ui/AnimatedContainer';
 
-const CATEGORIES = ["Food", "Travel", "Shopping", "Bills", "Entertainment", "Health", "Other"];
+const CATEGORIES = ["Food", "Travel", "Shopping", "Bills", "Entertainment", "Health", "Friend", "Unknown", "Other"];
 
 const BudgetsPage = () => {
   const [budgets, setBudgets] = useState({});

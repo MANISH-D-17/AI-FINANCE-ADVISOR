@@ -3,7 +3,7 @@ from sqlalchemy import Column, String, Integer, ForeignKey, Date, Numeric, Boole
 from sqlalchemy.orm import relationship
 from database import Base
 
-CATEGORIES = ["Food", "Travel", "Shopping", "Bills", "Entertainment", "Health", "Salary", "Refund", "Investments", "Cashback", "Income", "Transfers", "Other"]
+CATEGORIES = ["Food", "Travel", "Shopping", "Bills", "Entertainment", "Health", "Salary", "Refund", "Investments", "Cashback", "Income", "Transfers", "Friend", "Unknown", "Other"]
 
 
 class Expense(Base):

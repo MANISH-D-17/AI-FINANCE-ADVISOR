@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useExpenses } from '../hooks/useFinance';
 import ExpenseForm from '../components/expenses/ExpenseForm';
 import ExpenseTable from '../components/expenses/ExpenseTable';
@@ -12,12 +12,41 @@ const ExpensesPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState(null);
   const [filter, setFilter] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [sortOrder, setSortOrder] = useState('desc'); // 'desc' or 'asc'
 
   const filteredExpenses = useMemo(() => {
     return filter === 'anomalies' 
       ? expenses.filter(e => e.is_anomaly) 
       : expenses;
   }, [expenses, filter]);
+
+  // Reset to page 1 whenever filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filter]);
+
+  // Sorting logic (date only)
+  const sortedExpenses = useMemo(() => {
+    return [...filteredExpenses].sort((a, b) => {
+      const dateA = new Date(a.date);
+      const dateB = new Date(b.date);
+      return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+    });
+  }, [filteredExpenses, sortOrder]);
+
+  // Pagination logic (10 items per page)
+  const itemsPerPage = 10;
+  const totalPages = Math.max(1, Math.ceil(sortedExpenses.length / itemsPerPage));
+
+  const paginatedExpenses = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return sortedExpenses.slice(startIndex, startIndex + itemsPerPage);
+  }, [sortedExpenses, currentPage]);
+
+  const handleToggleSort = () => {
+    setSortOrder(prev => (prev === 'desc' ? 'asc' : 'desc'));
+  };
 
   const handleAddClick = () => {
     setEditingExpense(null);
@@ -122,10 +151,43 @@ const ExpensesPage = () => {
           <FadeIn>
             <div className="glass-card !p-0 overflow-hidden border-black/5 shadow-[0_20px_50px_rgba(0,0,0,0.02)]">
               <ExpenseTable 
-                expenses={filteredExpenses} 
+                expenses={paginatedExpenses} 
                 onEdit={handleEditClick} 
                 onDelete={removeExpense} 
+                sortOrder={sortOrder}
+                onToggleSort={handleToggleSort}
               />
+              
+              {/* Premium Minimal Pagination Bar */}
+              {totalPages > 1 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between px-10 py-6 border-t border-black/[0.03] bg-black/[0.01] gap-4">
+                  <div className="text-[10px] font-black text-black/30 uppercase tracking-[0.2em] text-center sm:text-left">
+                    Showing {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, sortedExpenses.length)} of {sortedExpenses.length} Entries
+                  </div>
+                  
+                  <div className="flex items-center gap-6">
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                      className="px-6 py-2 bg-white border border-black/5 text-black rounded-full text-[10px] font-bold uppercase tracking-[0.15em] hover:bg-black hover:text-white disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-black transition-all cursor-pointer shadow-sm"
+                    >
+                      Prev
+                    </button>
+                    
+                    <span className="text-[10px] font-black text-black/50 uppercase tracking-[0.2em]">
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                      disabled={currentPage === totalPages}
+                      className="px-6 py-2 bg-white border border-black/5 text-black rounded-full text-[10px] font-bold uppercase tracking-[0.15em] hover:bg-black hover:text-white disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-black transition-all cursor-pointer shadow-sm"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </FadeIn>
         )}

@@ -31,6 +31,20 @@
 }
 
 @layer base {
+  html {
+    font-size: 14.5px;
+  }
+  @media (min-width: 1024px) {
+    html {
+      font-size: 13px; /* Perfect scale down matching ~80% browser zoom for clean spacing! */
+    }
+  }
+  @media (min-width: 1400px) {
+    html {
+      font-size: 13.5px; /* Clean, balanced proportions for larger desktop monitors */
+    }
+  }
+  
   html, body {
     @apply antialiased text-black overflow-x-hidden bg-[#F5F5F5];
     font-family: 'TT Norms Pro', 'Inter', ui-sans-serif, system-ui, sans-serif;
@@ -125,4 +139,14 @@
 @keyframes leave {
   0% { transform: scale(1); opacity: 1; }
   100% { transform: scale(0.9); opacity: 0; }
+}
+
+@utility text-9xl {
+  font-size: clamp(3.2rem, 5.5vw, 4.4rem) !important;
+  line-height: 0.9 !important;
+}
+
+@utility text-7xl {
+  font-size: clamp(2.4rem, 4vw, 3.2rem) !important;
+  line-height: 0.95 !important;
 }

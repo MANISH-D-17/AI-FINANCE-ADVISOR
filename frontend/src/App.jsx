@@ -10,13 +10,12 @@ const LoginPage = lazy(() => import('./pages/LoginPage'));
 const RegisterPage = lazy(() => import('./pages/RegisterPage'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const ExpensesPage = lazy(() => import('./pages/ExpensesPage'));
-const InsightsPage = lazy(() => import('./pages/InsightsPage'));
-const ForecastPage = lazy(() => import('./pages/ForecastPage'));
+const AnalyticsPage = lazy(() => import('./pages/AnalyticsPage'));
 const ChatPage = lazy(() => import('./pages/ChatPage'));
 const HealthScorePage = lazy(() => import('./pages/HealthScorePage'));
-const GoalsPage = lazy(() => import('./pages/GoalsPage'));
 const AuthCallbackPage = lazy(() => import('./pages/AuthCallbackPage'));
 const BudgetsPage = lazy(() => import('./pages/BudgetsPage'));
+const SavingsPlannerPage = lazy(() => import('./pages/SavingsPlannerPage'));
 
 import PageWrapper from './components/layout/PageWrapper';
 import { useAuth } from './context/AuthContext';
@@ -26,11 +25,10 @@ const prefetchAllPages = () => {
   const pages = [
     () => import('./pages/ExpensesPage'),
     () => import('./pages/BudgetsPage'),
-    () => import('./pages/GoalsPage'),
-    () => import('./pages/InsightsPage'),
-    () => import('./pages/ForecastPage'),
+    () => import('./pages/AnalyticsPage'),
     () => import('./pages/ChatPage'),
     () => import('./pages/HealthScorePage'),
+    () => import('./pages/SavingsPlannerPage'),
   ];
   pages.forEach(load => load());
 };
@@ -80,16 +78,13 @@ const App = () => {
                 <ExpensesPage />
               </PageWrapper>
             } />
-            <Route path="/insights" element={
-              <PageWrapper title="AI Insights">
-                <InsightsPage />
+            <Route path="/analytics" element={
+              <PageWrapper title="Analytics">
+                <AnalyticsPage />
               </PageWrapper>
             } />
-            <Route path="/forecast" element={
-              <PageWrapper title="Forecast">
-                <ForecastPage />
-              </PageWrapper>
-            } />
+            <Route path="/insights" element={<Navigate to="/analytics" replace />} />
+            <Route path="/forecast" element={<Navigate to="/analytics" replace />} />
             <Route path="/chat" element={
               <PageWrapper title="AI Chat">
                 <ChatPage />
@@ -100,14 +95,15 @@ const App = () => {
                 <HealthScorePage />
               </PageWrapper>
             } />
-            <Route path="/goals" element={
-              <PageWrapper title="Savings Goals">
-                <GoalsPage />
-              </PageWrapper>
-            } />
+
             <Route path="/budgets" element={
               <PageWrapper title="Budget Limits">
                 <BudgetsPage />
+              </PageWrapper>
+            } />
+            <Route path="/savings-planner" element={
+              <PageWrapper title="Wealth Architect">
+                <SavingsPlannerPage />
               </PageWrapper>
             } />
           </Route>

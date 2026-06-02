@@ -8,4 +8,8 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  server: {
+    port: 5173,
+    strictPort: true, // fail loudly if 5173 is taken, so OAuth origin never drifts
+  },
 })

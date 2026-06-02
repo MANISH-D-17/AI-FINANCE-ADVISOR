@@ -35,7 +35,7 @@ async def get_latest_notifications(
             "id": f"anom_{anom.id}",
             "type": "security",
             "title": "Suspicious Activity",
-            "message": f"₹{anom.amount} at {anom.merchant}: {anom.anomaly_explanation}",
+            "message": f"₹{anom.amount} at {anom.description or 'Unknown Merchant'}: {anom.anomaly_explanation}",
             "timestamp": str(anom.date),
             "priority": "high"
         })

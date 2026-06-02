@@ -131,13 +131,25 @@ async def upload_statement_for_import(
         else:
             raise HTTPException(status_code=400, detail="Unsupported file format. Please upload a PDF or CSV.")
 
-        # Auto-categorize each row with v3 confidence metadata
+        # Auto-categorize each row with ML + LLM two-pass correction
+        from services.categorizer_service import categorize_with_llm_correction
+        
+        tx_dicts = [
+            {
+                "description": row.get("description", ""),
+                "amount": float(row.get("amount", 0)),
+                "date": str(row.get("date", "")),
+            }
+            for row in rows
+        ]
+
+        enriched = await categorize_with_llm_correction(tx_dicts, confidence_threshold=0.75)
+
         preview = []
-        for row in rows:
-            result = predict_category_detailed(row.get("description", ""))
-            row["category"] = result["category"]
-            row["confidence"] = result["confidence"]
-            row["requires_review"] = result["requires_review"]
+        for row, enriched_tx in zip(rows, enriched):
+            row["category"] = enriched_tx["category"]
+            row["confidence"] = enriched_tx["confidence"]
+            row["requires_review"] = enriched_tx["requires_review"]
             preview.append(row)
 
         return preview

@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field, validator
 from typing import Optional, List
-from datetime import date, datetime
+from datetime import date as dt_date, datetime
 from decimal import Decimal
 
 
@@ -8,7 +8,7 @@ class ExpenseCreate(BaseModel):
     amount: Decimal = Field(..., gt=0, le=10_000_000, description="Amount must be positive")
     category: str = Field(..., min_length=1, max_length=50)
     description: Optional[str] = Field(None, max_length=500)
-    date: date
+    date: dt_date
     transaction_type: str = "expense"
     reference_number: Optional[str] = None
     account_name: Optional[str] = "Primary"
@@ -22,7 +22,7 @@ class ExpenseUpdate(BaseModel):
     amount: Optional[Decimal] = Field(None, gt=0, le=10_000_000)
     category: Optional[str] = Field(None, min_length=1, max_length=50)
     description: Optional[str] = Field(None, max_length=500)
-    date: Optional[date] = None
+    date: Optional[dt_date] = None
 
 
 class ExpenseResponse(BaseModel):
@@ -31,7 +31,7 @@ class ExpenseResponse(BaseModel):
     amount: Decimal
     category: str
     description: Optional[str]
-    date: date
+    date: dt_date
     transaction_type: str
     reference_number: Optional[str]
     account_name: Optional[str]
@@ -46,7 +46,7 @@ class ExpenseResponse(BaseModel):
 
 
 class ExpenseImportRow(BaseModel):
-    date: date
+    date: dt_date
     description: str
     amount: Decimal
     type: str  # 'debit' or 'credit'

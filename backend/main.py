@@ -12,6 +12,7 @@ from routers import (
     notifications, sync_simulator, tax
 )
 from routers import google_auth
+from routers import savings_planner
 from services.ml_metrics import evaluate_and_store_metrics
 from services.retraining import retrain_model
 from services.email_service import trigger_all_weekly_digests
@@ -152,6 +153,14 @@ app.include_router(net_worth.router)
 app.include_router(notifications.router)
 app.include_router(sync_simulator.router)
 app.include_router(tax.router)
+app.include_router(savings_planner.router)
+
+
+@app.get("/admin/llm-status", tags=["Admin"])
+async def llm_status():
+    """Returns current LLM provider rate limit status."""
+    from services.llm_router import get_rate_limit_status
+    return get_rate_limit_status()
 
 
 @app.get("/", tags=["Health"])

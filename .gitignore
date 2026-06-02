@@ -24,3 +24,8 @@ Thumbs.db
 # IDEs
 .vscode/
 .idea/
+
+# Virtual Environments & Scratch
+venv_new/
+scratch/
+

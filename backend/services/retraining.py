@@ -29,7 +29,7 @@ MIN_ACCURACY = 0.85  # Lower threshold for nightly retrain (less data than initi
 
 VALID_CATEGORIES = {
     "Food", "Travel", "Shopping", "Bills", "Health",
-    "Entertainment", "Other", "Investments", "Transfers", "Income"
+    "Entertainment", "Other", "Investments", "Transfers", "Income", "Friend", "Unknown"
 }
 
 

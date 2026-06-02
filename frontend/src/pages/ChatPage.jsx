@@ -68,17 +68,68 @@ const ChatPage = () => {
       setReasoningStep(steps[currentStep]);
       currentStep++;
       if (currentStep >= steps.length) clearInterval(interval);
-    }, 1500);
+    }, 1200);
 
     try {
-      const response = await apiClient.post('/chat', {
-        messages: [{ role: 'user', content: input }] 
+      const response = await fetch('http://localhost:8000/chat/stream', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': apiClient.defaults.headers.common['Authorization'] || `Bearer ${localStorage.getItem('token') || ''}`
+        },
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: input }] 
+        })
       });
-      setTimeout(() => {
-        setMessages([...newMessages, { role: 'assistant', content: response.data.reply }]);
-        setLoading(false);
-        setReasoningStep(null);
-      }, 1000);
+
+      clearInterval(interval);
+      setReasoningStep(null);
+
+      if (!response.ok) {
+        throw new Error('Streaming failed');
+      }
+
+      setLoading(false);
+
+      // Create a temporary message holder for the assistant
+      const assistantMsg = { role: 'assistant', content: '' };
+      setMessages(prev => [...prev, assistantMsg]);
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let finished = false;
+      let accumulatedText = "";
+
+      while (!finished) {
+        const { value, done } = await reader.read();
+        finished = done;
+        if (value) {
+          const chunk = decoder.decode(value, { stream: !done });
+          
+          // Parse Server-Sent Events "data: { ... }" lines
+          const lines = chunk.split("\n");
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              try {
+                const parsed = JSON.parse(line.slice(6));
+                if (parsed.token) {
+                  accumulatedText += parsed.token;
+                  setMessages(prev => {
+                    const list = [...prev];
+                    list[list.length - 1] = {
+                      role: 'assistant',
+                      content: accumulatedText
+                    };
+                    return list;
+                  });
+                }
+              } catch (e) {
+                // Ignore incomplete JSON chunks at ends
+              }
+            }
+          }
+        }
+      }
     } catch (error) {
       toast.error('Strategic Engine is recalibrating.');
       setLoading(false);

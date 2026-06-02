@@ -36,10 +36,71 @@ _model_bundle = None   # v3 format: {"ensemble", "word_vectorizer", "char_vector
 _legacy_model = None   # old sklearn Pipeline (fallback)
 
 
-# ─── Keyword heuristic fallback ───────────────────────────────────────────────
+def _contains_person_name(desc: str) -> bool:
+    """
+    Detect if the description contains a person's name (e.g. PRIYA SHARMA, AMIT, etc.)
+    and lacks common merchant keywords.
+    """
+    import re
+    desc_lower = desc.lower()
+    
+    # Common corporate/merchant indicators - if these are present, it's a merchant, not a personal friend
+    merchant_indicators = [
+        "swiggy", "zomato", "restaurant", "food", "pizza", "burger", "cafe", "blinkit", "bigbasket", "zepto", 
+        "kirana", "grocery", "dunzo", "uber", "ola", "flight", "train", "bus", "travel", "hotel", "irctc", 
+        "rapido", "metro", "petrol", "fuel", "fasttag", "amazon", "flipkart", "shopping", "myntra", "mall", 
+        "nykaa", "meesho", "ajio", "croma", "reliance", "electricity", "internet", "gas", "bill", "rent", 
+        "water", "recharge", "airtel", "jio", "netflix", "spotify", "movie", "game", "entertainment", 
+        "bookmyshow", "pvr", "hotstar", "doctor", "hospital", "medicine", "pharmacy", "gym", "health", 
+        "zerodha", "groww", "mutual fund", "sip", "upstox", "insurance", "loan", "emi", "bata", "starbucks", 
+        "mcdonald", "kfc", "dmart", "decathlon", "paytm", "phonepe", "gpay", "billdesk", "razorpay", "instamart"
+    ]
+    if any(m in desc_lower for m in merchant_indicators):
+        return False
+        
+    # Exclude own-account or bank terms
+    bank_terms = ["self transfer", "neft to self", "sweep to", "fd creation", "rd installment", "ppf", "nps", "own account", "interest credit", "dividend"]
+    if any(bt in desc_lower for bt in bank_terms):
+        return False
+
+    # Common Indian names search
+    common_names = [
+        "priya", "amit", "rohit", "sanjay", "rahul", "priyanka", "abhishek", "sneha", "pooja", "neha",
+        "anil", "sunil", "vijay", "ajay", "rajesh", "suresh", "deepak", "sandeep", "manish", "harish",
+        "vikram", "arjun", "karan", "varun", "rishi", "aditya", "ananya", "isha", "riyah", "tanvi",
+        "aniket", "vishal", "akash", "mohit", "gaurav", "siddharth", "kunal", "pranav", "nikhil",
+        "rohan", "ashok", "ramesh", "mahesh", "dinesh", "naresh", "kamlesh", "umesh", "sanjay"
+    ]
+    if any(n in desc_lower for n in common_names):
+        return True
+
+    # Generic check for UPI/IMPS transfer to a person
+    upi_markers = ["upi/", "upi-", "imps-", "neft-", "transfer:"]
+    if any(marker in desc_lower for marker in upi_markers):
+        # Let's see if we have alphabetic tokens
+        clean_text = re.sub(r'[^a-zA-Z\s]', ' ', desc)
+        words = [w for w in clean_text.split() if len(w) >= 3 and w.lower() not in ["upi", "imps", "neft", "dr", "cr", "ref", "transfer", "payment"]]
+        if len(words) >= 1:
+            return True
+            
+    return False
+
+
 def _keyword_fallback(description: str) -> str:
     """Used when no model is available at all."""
     desc = description.lower()
+    
+    # 1. P2P transfers to people (Friends)
+    p2p_keywords = [
+        "sent to", "transfer to", "paid to", "pay to", "upi to", "payment to",
+        "received from", "recieved from", "sent from", "transfer from",
+        "to self", "to a/c", "transfer: ", "imps to", "neft to"
+    ]
+    if any(k in desc for k in p2p_keywords) or _contains_person_name(description):
+        # Exclude own account transfers
+        if not any(k in desc for k in ["self transfer", "neft to self", "sweep to", "fd creation", "rd installment", "ppf", "nps", "own account"]):
+            return "Friend"
+            
     if any(k in desc for k in ["swiggy", "zomato", "restaurant", "food", "pizza", "burger", "cafe", "blinkit", "bigbasket", "zepto", "kirana", "grocery", "dunzo"]):
         return "Food"
     elif any(k in desc for k in ["uber", "ola", "flight", "train", "bus", "travel", "hotel", "irctc", "rapido", "metro", "petrol", "fuel", "fasttag", "redbus", "indigo", "spicejet"]):
@@ -58,7 +119,8 @@ def _keyword_fallback(description: str) -> str:
         return "Investments"
     elif any(k in desc for k in ["self transfer", "neft to self", "sweep to", "fd creation", "rd installment", "ppf", "nps", "own account", "family transfer"]):
         return "Transfers"
-    return "Other"
+        
+    return "Unknown"
 
 
 # ─── Model loading ────────────────────────────────────────────────────────────
@@ -210,6 +272,23 @@ def predict_category_detailed(description: str) -> dict:
     if not description or not description.strip():
         return {"category": "Other", "confidence": 1.0, "top3": [{"category": "Other", "probability": 1.0}], "requires_review": False}
 
+    # High-Priority Intercept for Friend/P2P transfers containing names or P2P patterns
+    desc_lower = description.lower()
+    p2p_keywords = [
+        "sent to", "transfer to", "paid to", "pay to", "upi to", "payment to",
+        "received from", "recieved from", "sent from", "transfer from",
+        "imps to", "neft to"
+    ]
+    if any(k in desc_lower for k in p2p_keywords) or _contains_person_name(description):
+        # Exclude own account transfers
+        if not any(k in desc_lower for k in ["self transfer", "neft to self", "sweep to", "fd creation", "rd installment", "ppf", "nps", "own account"]):
+            return {
+                "category": "Friend",
+                "confidence": 0.95,
+                "top3": [{"category": "Friend", "probability": 0.95}],
+                "requires_review": False
+            }
+
     model = load_categorizer()
 
     if model is None:
@@ -242,3 +321,126 @@ def invalidate_model_cache():
     global _model_bundle, _legacy_model
     _model_bundle = None
     _legacy_model = None
+
+
+# Two-Pass Categorization Flow (ML + LLM correction)
+async def categorize_with_llm_correction(
+    transactions: list[dict],
+    confidence_threshold: float = 0.75,
+) -> list[dict]:
+    """
+    Two-pass categorization:
+    Pass 1: ML model (fast, ~1ms per transaction)
+    Pass 2: LLM correction for low-confidence predictions (< threshold)
+
+    Args:
+        transactions: List of {"description": str, "amount": float, "date": str}
+        confidence_threshold: Below this, route to LLM for correction
+
+    Returns:
+        List with added fields: category, confidence, requires_review,
+        correction_source ("ml" | "llm" | "fallback")
+    """
+    from services.llm_router import call_llm_json
+    import json
+
+    results = []
+    llm_correction_batch = []
+    llm_indices = []
+
+    # Pass 1: ML categorization
+    for i, tx in enumerate(transactions):
+        detail = predict_category_detailed(tx.get("description", ""))
+        result = {
+            **tx,
+            "category": detail["category"],
+            "confidence": detail["confidence"],
+            "top3": detail["top3"],
+            "requires_review": detail["requires_review"],
+            "correction_source": "ml",
+        }
+        results.append(result)
+
+        # Queue for LLM correction if confidence is low
+        if detail["confidence"] < confidence_threshold:
+            llm_correction_batch.append({
+                "index": i,
+                "description": tx.get("description", ""),
+                "amount": float(tx.get("amount", 0)),
+                "date": str(tx.get("date", "")),
+                "ml_top3": detail["top3"],
+            })
+            llm_indices.append(i)
+
+    # Pass 2: LLM correction for low-confidence batch
+    if llm_correction_batch:
+        VALID_CATEGORIES = [
+            "Food", "Travel", "Shopping", "Bills", "Entertainment",
+            "Health", "Income", "Investments", "Transfers", "Friend", "Unknown", "Other"
+        ]
+
+        system_prompt = f"""You are an expert Indian bank transaction categorizer.
+You will receive a batch of transactions with their ML model's best guesses.
+Correct the category if the ML prediction seems wrong based on the description and amount.
+
+Valid categories: {", ".join(VALID_CATEGORIES)}
+
+Rules:
+- UPI transfers to standard merchant accounts or food items → Food
+- P2P UPI transfers to individual people/friends (e.g. 'UPI to Amit Kumar', 'Paid to Priya', 'Transfer to Rohit') → Friend
+- If description consists mainly of a person's name or standard P2P markers → Friend
+- UPI transfers between own personal accounts → Transfers
+- Salary/payroll credits → Income
+- SIP/mutual fund/stock purchases → Investments  
+- Restaurant/food delivery → Food
+- OLA/Uber/IRCTC/flight → Travel
+- Amazon/Flipkart/Myntra → Shopping
+- Electricity/gas/internet bills → Bills
+- Netflix/Spotify/BookMyShow → Entertainment
+- Pharmacy/hospital/doctor → Health
+- Completely unknown or unidentifiable payments that do not fit other categories → Unknown
+- Everything else → Other
+
+For each transaction, provide your best category and confidence (0.0-1.0).
+Return ONLY a JSON array of objects with: index, category, confidence, reasoning"""
+
+        user_message = (
+            f"Categorize these {len(llm_correction_batch)} transactions:\n"
+            + json.dumps(llm_correction_batch, indent=2)
+        )
+
+        try:
+            corrections = await call_llm_json(system_prompt, user_message, max_tokens=2048)
+
+            if isinstance(corrections, list):
+                for correction in corrections:
+                    idx = correction.get("index")
+                    if idx is not None and 0 <= idx < len(results):
+                        results[idx]["category"] = correction.get(
+                            "category", results[idx]["category"]
+                        )
+                        results[idx]["confidence"] = correction.get(
+                            "confidence", results[idx]["confidence"]
+                        )
+                        results[idx]["correction_source"] = "llm"
+                        results[idx]["llm_reasoning"] = correction.get("reasoning", "")
+                        results[idx]["requires_review"] = (
+                            results[idx]["confidence"] < 0.70
+                        )
+        except Exception as e:
+            logger.warning(f"LLM correction pass failed, applying keyword fallback as secondary pass: {e}")
+            for idx in llm_indices:
+                desc = results[idx]["description"]
+                kw_category = _keyword_fallback(desc)
+                if kw_category != "Other":
+                    results[idx]["category"] = kw_category
+                    results[idx]["correction_source"] = "fallback"
+                    results[idx]["confidence"] = 0.8
+                    results[idx]["requires_review"] = False
+                else:
+                    results[idx]["category"] = "Unknown"
+                    results[idx]["correction_source"] = "fallback"
+                    results[idx]["confidence"] = 0.5
+                    results[idx]["requires_review"] = True
+
+    return results

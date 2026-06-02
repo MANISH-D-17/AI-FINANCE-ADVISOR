@@ -97,32 +97,32 @@ const DashboardPage = () => {
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap items-center gap-3">
             <button 
               onClick={handleSyncSimulation}
               disabled={simLoading}
-              className="bg-white border border-black/5 text-black px-10 py-4 rounded-full text-[11px] font-black uppercase tracking-[0.2em] hover:bg-black hover:text-white transition-all shadow-xl shadow-black/5 flex items-center gap-3"
+              className="bg-white border border-black/5 text-black px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-[0.18em] hover:bg-black hover:text-white transition-all shadow-xl shadow-black/5 flex items-center gap-2"
             >
-              <HiOutlineRefresh className={`w-4 h-4 ${simLoading ? 'animate-spin' : ''}`} />
+              <HiOutlineRefresh className={`w-3.5 h-3.5 ${simLoading ? 'animate-spin' : ''}`} />
               Sync Assets
             </button>
             
             <button 
               onClick={handleExportPDF}
               disabled={exportLoading}
-              className="bg-white border border-black/5 text-black px-10 py-4 rounded-full text-[11px] font-black uppercase tracking-[0.2em] hover:bg-black hover:text-white transition-all shadow-xl shadow-black/5 flex items-center gap-3"
+              className="bg-white border border-black/5 text-black px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-[0.18em] hover:bg-black hover:text-white transition-all shadow-xl shadow-black/5 flex items-center gap-2"
             >
-              <HiOutlineDocumentDownload className={`w-4 h-4 ${exportLoading ? 'animate-spin' : ''}`} />
+              <HiOutlineDocumentDownload className={`w-3.5 h-3.5 ${exportLoading ? 'animate-spin' : ''}`} />
               Download Report
             </button>
 
             <button 
               onClick={() => setIsImportModalOpen(true)}
-              className="bg-black text-white px-12 py-4 rounded-full text-[11px] font-black uppercase tracking-[0.3em] hover:bg-gray-800 transition-all shadow-2xl shadow-black/20 flex items-center gap-4 group"
+              className="bg-black text-white px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] hover:bg-gray-800 transition-all shadow-2xl shadow-black/20 flex items-center gap-3 group"
             >
               Import Statement
-              <div className="bg-white rounded-full p-1.5 group-hover:translate-x-1 transition-transform">
-                <ArrowRight className="w-4 h-4 text-black" />
+              <div className="bg-white rounded-full p-1 group-hover:translate-x-1 transition-transform">
+                <ArrowRight className="w-3.5 h-3.5 text-black" />
               </div>
             </button>
           </div>

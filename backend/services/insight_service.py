@@ -17,31 +17,24 @@ _executor = ThreadPoolExecutor(max_workers=5)
 
 async def _compute_stats(db: AsyncSession, user_id: str) -> dict:
     today = date.today()
-    current_month = today.month
-    current_year = today.year
-    last_month = (today.replace(day=1) - timedelta(days=1))
-    prev_month = last_month.month
-    prev_year = last_month.year
+    # Current period: last 30 days
+    curr_start = today - timedelta(days=30)
+    # Previous period: 30-60 days ago
+    prev_start = today - timedelta(days=60)
+    prev_end = today - timedelta(days=30)
 
-    async def monthly_expenses(month, year):
-        # Calculate start and end of month
-        start_date = date(year, month, 1)
-        if month == 12:
-            end_date = date(year + 1, 1, 1)
-        else:
-            end_date = date(year, month + 1, 1)
-            
+    async def period_expenses(start, end):
         stmt = select(Expense).where(
             Expense.user_id == user_id,
-            Expense.date >= start_date,
-            Expense.date < end_date,
+            Expense.date >= start,
+            Expense.date < end,
             Expense.transaction_type.in_(('debit', 'expense'))
         )
         result = await db.execute(stmt)
         return result.scalars().all()
 
-    curr = await monthly_expenses(current_month, current_year)
-    prev = await monthly_expenses(prev_month, prev_year)
+    curr = await period_expenses(curr_start, today)
+    prev = await period_expenses(prev_start, prev_end)
 
     curr_total = float(sum(e.amount for e in curr)) or 0
     prev_total = float(sum(e.amount for e in prev)) or 0
@@ -68,9 +61,12 @@ async def _compute_stats(db: AsyncSession, user_id: str) -> dict:
         if p > 0:
             mom_changes[cat] = round((c - p) / p * 100, 1)
 
+    change_pct = round((curr_total - prev_total) / prev_total * 100, 1) if prev_total > 0 else 0.0
+
     return {
         "curr_total": curr_total,
         "prev_total": prev_total,
+        "change_pct": change_pct,
         "curr_cats": curr_cats,
         "prev_cats": prev_cats,
         "weekend_spend": weekend,
