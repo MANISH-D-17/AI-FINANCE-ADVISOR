@@ -251,31 +251,34 @@ COMPUTED PLAN (math already verified — do NOT change numbers):
 - Verdict: {rule_plan['financial_health_verdict']}
 
 Equity SIP suggested: ₹{rule_plan['allocation']['equity_mutual_funds']['monthly_sip']:,.0f}/month
-FD allocation: ₹{rule_plan['allocation']['fixed_deposits']['monthly_rd_or_lumpsum']:,.0f}/month  Generate ONLY this JSON structure:
-{
+FD allocation: ₹{rule_plan['allocation']['fixed_deposits']['monthly_rd_or_lumpsum']:,.0f}/month
+Gold allocation: ₹{rule_plan['allocation']['gold']['monthly']:,.0f}/month
+
+Generate ONLY this JSON structure:
+{{
   "key_insights": [
     "insight 1 — specific to their numbers",
     "insight 2",
     "insight 3"
   ],
   "goal_strategies": [
-    {
+    {{
       "goal": "goal name from input",
       "monthly_required": 0,
       "recommended_instrument": "specific fund/FD/etc",
       "timeline_achievable": true,
       "tip": "specific advice"
-    }
+    }}
   ],
-  "tax_optimization": {
+  "tax_optimization": {{
     "section_80c_headroom": 0,
     "recommended_instruments": [],
     "potential_tax_saving": 0,
     "tip": "specific tip"
-  },
+  }},
   "behavioral_nudges": ["nudge 1", "nudge 2"],
   "early_warnings": ["warning if any"],
-  "executive_advisory": {
+  "executive_advisory": {{
     "title": "Senior Advisor Strategic Assessment",
     "greeting": "Dear Client,",
     "analysis": "A sophisticated, empathetic advisory analysis of their situation. If critical, detail exactly why their savings rate is at a critical level and what risks it presents. Speak in the tone of a wise, highly experienced partner.",
@@ -284,8 +287,9 @@ FD allocation: ₹{rule_plan['allocation']['fixed_deposits']['monthly_rd_or_lump
       "Explain how they can invest that newly freed surplus to achieve their specific milestones (naming the milestones from goals input) in the given timeline."
     ],
     "conclusion": "A highly motivating, reassuring financial wisdom quote or directive."
-  }
-}"""
+  }}
+}}"""
+
 
     try:
         llm_enrichment = await call_llm_json(system_prompt, user_message, max_tokens=3000)
